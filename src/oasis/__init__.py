@@ -27,7 +27,7 @@ from oasis.lib.Audit import audit
 from oasis.lib.Permissions import satisfy_perms
 
 from flask.ext.sqlalchemy import SQLAlchemy
-from oasis.models import User
+
 app = Flask(__name__,
             template_folder=os.path.join(OaConfig.homedir, "templates"),
             static_folder=os.path.join(OaConfig.homedir, "static"),
@@ -37,6 +37,8 @@ app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8MB max file size upload
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://%s:%s@%s:%s/%s' % (OaConfig.dbuname, OaConfig.dbpass, OaConfig.dbhost, OaConfig.dbport, OaConfig.dbname)
 
 db = SQLAlchemy(app)
+
+from oasis.models import User
 
 # Email error messages to admins ?
 if OaConfig.email_admins:

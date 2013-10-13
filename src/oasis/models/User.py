@@ -1,12 +1,16 @@
-""" User accounts
-"""
+# -*- coding: utf-8 -*-
+#
+# This code is under the GNU Affero General Public License
+# http://www.gnu.org/licenses/agpl-3.0.html
 
-from oasis.lib.DB2 import Base
+import logging
+from logging import log, INFO, ERROR
 import hashlib, bcrypt
 from sqlalchemy import Column, Integer, String, DateTime
+from oasis import db
 
 
-class User(Base):
+class User(db.Model):
 
   __tablename__ = 'users'
   id = Column(Integer, primary_key=True)
@@ -36,6 +40,13 @@ class User(Base):
     self.passwd = hashed
     return True
 
+  @staticmethod
+  def get(user_id):
+    """ Return the user object for the give ID, or None
+    """
+    return User.query.filter_by(id = user_id).first()
+
+   
   @staticmethod
   def verify_password(uname, clearpass):
     """ Confirm the password is correct for the given user name.

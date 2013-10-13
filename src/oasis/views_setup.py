@@ -19,8 +19,9 @@ MYPATH = os.path.dirname(__file__)
 from oasis.lib.Audit import audit, get_records_by_user
 from oasis.lib.Permissions import check_perm, satisfy_perms, add_perm, delete_perm
 
-from oasis import app, authenticated
+from oasis import app, authenticated, db
 
+from oasis.models import User
 
 @app.route("/setup/top")
 @authenticated
@@ -235,12 +236,10 @@ def setup_myprofile():
 @authenticated
 def setup_change_pass():
     """ Ask for a new password """
-    user_id = session['user_id']
 
-    user = Users2.get_user(user_id)
     return render_template(
         'setup_changepassword.html',
-        user=user,
+        user=User.get(session['user_id'])
     )
 
 
@@ -286,9 +285,9 @@ def setup_user_remove_sysadmin():
 @authenticated
 def setup_change_pass_submit():
     """ Set a new password """
-    user_id = session['user_id']
-
-    user = Users2.get_user(user_id)
+    u = User.get(session['user_id'])
+    if not u:
+      abort(404)
 
     if not "newpass" in request.form or not "confirm" in request.form:
         flash("Please provide your new password")
@@ -305,9 +304,11 @@ def setup_change_pass_submit():
         flash("Passwords do not match")
         return redirect(url_for("setup_change_pass"))
 
-    Users2.set_password(user_id=user_id, clearpass=newpass)
-    audit(1, user_id,
-          user_id,
-          "Setup", "%s reset password for %s." % (user['uname'], user['uname']))
+    u.set_password(clearpass=newpass)
+    audit(1, u.id,
+          u.id,
+          "Setup", "%s reset password for %s." % (u.uname, u.uname))
     flash("Password changed")
+    db.session.add(u)
+    db.session.commit()
     return redirect(url_for("setup_myprofile"))
