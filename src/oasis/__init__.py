@@ -26,12 +26,17 @@ from oasis.lib import OaConfig, Users2, Users, DB
 from oasis.lib.Audit import audit
 from oasis.lib.Permissions import satisfy_perms
 
+from flask.ext.sqlalchemy import SQLAlchemy
+from oasis.models import User
 app = Flask(__name__,
             template_folder=os.path.join(OaConfig.homedir, "templates"),
             static_folder=os.path.join(OaConfig.homedir, "static"),
             static_url_path=os.path.join(os.path.sep, OaConfig.staticpath, "static"))
 app.secret_key = OaConfig.secretkey
 app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8MB max file size upload
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://%s:%s@%s:%s/%s' % (OaConfig.dbuname, OaConfig.dbpass, OaConfig.dbhost, OaConfig.dbport, OaConfig.dbname)
+
+db = SQLAlchemy(app)
 
 # Email error messages to admins ?
 if OaConfig.email_admins:
@@ -250,27 +255,27 @@ def login_local_submit():
     username = request.form['username']
     password = request.form['password']
 
-    user_id = Users2.verify_pass(username, password)
-    if not user_id:
+    u = User.verify_password(username, password)
+    if not u:
         log(INFO, "Failed Login for %s" % username)
         flash("Incorrect name or password.")
         return redirect(url_for("login_local"))
 
-    user = Users2.get_user(user_id)
-    if not user['confirmed']:
+    if not u.confirmed:
         flash("""Your account is not yet confirmed. You should have received
                  an email with instructions in it to do so.""")
         return redirect(url_for("login_local"))
-    session['username'] = username
-    session['user_id'] = user_id
-    session['user_givenname'] = user['givenname']
-    session['user_familyname'] = user['familyname']
-    session['user_fullname'] = user['fullname']
+    session['username'] = u.uname
+    session['user_id'] = u.id
+    session['user_givenname'] = u.givenname
+    session['user_familyname'] = u.familyname
+#    session['user_fullname'] = u.fullname
     session['user_authtype'] = "local"
 
-    audit(1, user_id, user_id, "UserAuth",
+    audit(1, u.id, u.id, "UserAuth",
           "%s successfully logged in locally" % (session['username'],))
 
+    db.session.commit()
     if 'redirect' in session:
         log(INFO, "Following redirect for %s" % username)
         target = OaConfig.parentURL + session['redirect']
