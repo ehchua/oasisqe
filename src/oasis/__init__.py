@@ -271,7 +271,7 @@ def login_local_submit():
     session['user_id'] = u.id
     session['user_givenname'] = u.givenname
     session['user_familyname'] = u.familyname
-#    session['user_fullname'] = u.fullname
+    session['user_fullname'] = u.fullname
     session['user_authtype'] = "local"
 
     audit(1, u.id, u.id, "UserAuth",
@@ -319,37 +319,33 @@ def login_forgot_pass_submit():
                  please see the Installation instructions.""")
         return redirect(url_for("login_forgot_pass"))
 
-    if username:
-        user_id = Users2.uid_by_uname(username)
-    else:
-        user_id = None
+    u = User.get_by_uname(username)
+    if not u:
+      flash("Unknown username ")
+      return redirect(url_for("login_forgot_pass"))
 
-    if not user_id:
-        flash("Unknown username ")
-        return redirect(url_for("login_forgot_pass"))
+    if not u.source == "local":
+      flash("Your password is not managed by OASIS, "
+            "please contact IT Support.")
+      return redirect(url_for("login_forgot_pass"))
 
-    user = Users2.get_user(user_id)
-    if not user['source'] == "local":
-        flash("Your password is not managed by OASIS, "
-              "please contact IT Support.")
-        return redirect(url_for("login_forgot_pass"))
+    code = u.gen_confirm_code()
 
-    code = Users.gen_confirm_code()
-    Users.set_confirm_code(user_id, code)
-
-    email = user['email']
-    if not email:
+    if not u.email:
         flash("We do not appear to have an email address on file for "
               "that account.")
         return redirect(url_for("login_forgot_pass"))
 
     text_body = render_template(os.path.join("email", "forgot_pass.txt"), code=code)
     html_body = render_template(os.path.join("email", "forgot_pass.html"), code=code)
-    send_email(user['email'],
+    send_email(u.email,
                from_addr=None,
                subject="OASIS Password Reset",
                text_body=text_body,
                html_body=html_body)
+
+    db.session.add(u)
+    db.session.commit()
 
     return render_template("login_forgot_pass_submit.html")
 

@@ -8,6 +8,7 @@ from logging import log, INFO, ERROR
 import hashlib, bcrypt
 from sqlalchemy import Column, Integer, String, DateTime
 from oasis import db
+from oasis.lib.Util import generate_uuid_readable
 
 
 class User(db.Model):
@@ -40,12 +41,27 @@ class User(db.Model):
     self.passwd = hashed
     return True
 
+  def gen_confirm_code(self):
+    """ Generate a new confirmation code and remember it.
+    """
+    self.confirmation_code = generate_uuid_readable(9)
+    return self.confirmation_code
+
+  @property
+  def fullname(self):
+    """ Return the users (calculated) full name.
+    """
+
+    return u"%s %s" %(self.givenname, self.familyname)
+
+
+  # --- Static Methods ---
+
   @staticmethod
   def get(user_id):
     """ Return the user object for the give ID, or None
     """
     return User.query.filter_by(id = user_id).first()
-
    
   @staticmethod
   def verify_password(uname, clearpass):
@@ -53,7 +69,7 @@ class User(db.Model):
         We first try bcrypt, if it fails we try md5 to see if they have
         an old password, and if so, upgrade the stored password to bcrypt.
     """
-    u = User.query.filter_by(uname = uname).first()
+    u = User.get_by_uname(uname)
 
     if not u:
         return False
@@ -74,4 +90,12 @@ class User(db.Model):
         log(INFO, "Upgrading MD5 password to bcrypt for %s" % u.uname)
         return u
     return False
+
+  @staticmethod
+  def get_by_uname(uname):
+    """ Find a user by their username.
+    """
+
+    return User.query.filter_by(uname = uname).first()
+
 
