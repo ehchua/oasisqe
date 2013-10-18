@@ -3,9 +3,10 @@
     Functionality for importing and exporting spreadsheets.
 """
 
-from oasis.lib import Courses2, Exams, Users2
+from oasis.lib import Courses2, Exams
 from openpyxl.writer.excel import save_virtual_workbook
 from openpyxl.workbook import Workbook
+from oasis.models.User import User
 
 
 def exam_results_as_spreadsheet(course_id, group, exam_id):
@@ -28,7 +29,7 @@ def exam_results_as_spreadsheet(course_id, group, exam_id):
     questions = Exams.get_qts_list(exam_id)
     users = {}
     for uid in uids:
-        users[uid] = Users2.get_user(uid)
+        users[uid] = User.get(uid)
 
     wb = Workbook()
 
@@ -54,15 +55,15 @@ def exam_results_as_spreadsheet(course_id, group, exam_id):
 
     row = 5
     sortusers = users.keys()
-    sortusers.sort(key=lambda us: users[us]['familyname'])
+    sortusers.sort(key=lambda us: users[us].familyname)
 
     for user_id in sortusers:
         result = results[user_id]
-        ws.cell(row=row, column=0).value = users[user_id]['uname']
-        ws.cell(row=row, column=1).value = users[user_id]['student_id']
-        ws.cell(row=row, column=2).value = users[user_id]['familyname']
-        ws.cell(row=row, column=3).value = users[user_id]['givenname']
-        ws.cell(row=row, column=4).value = users[user_id]['email']
+        ws.cell(row=row, column=0).value = users[user_id].uname
+        ws.cell(row=row, column=1).value = users[user_id].student_id
+        ws.cell(row=row, column=2).value = users[user_id].familyname
+        ws.cell(row=row, column=3).value = users[user_id].givenname
+        ws.cell(row=row, column=4).value = users[user_id].email
         col = 5
 
         for pos in questions:

@@ -11,7 +11,7 @@ import os
 from flask import render_template, session, \
     request, redirect, url_for, flash, abort
 
-from oasis.lib import Users2, General, Exams, \
+from oasis.lib import Users, General, Exams, \
     Courses2, Setup
 
 MYPATH = os.path.dirname(__file__)
@@ -88,16 +88,21 @@ def setup_usercreate():
             elif new_confirm == "" or not new_confirm == new_pass:
                 error = "Passwords don't match (or are empty)"
             else:   # yaay, it's ok
-                # uname, passwd, givenname, familyname, acctstatus,
-                # studentid, email=None, expiry=None, source="local"
-                Users2.create(new_uname,
-                              "nologin-creation",
-                              new_fname,
-                              new_sname,
-                              2,
-                              '',
-                              new_email)
-                Users2.set_password(User.get_by_uname(new_uname).id, new_pass)
+
+                user = User(uname=new_uname,
+                            passwd="nologin-creation",
+                            email=new_email,
+                            givenname=new_fname,
+                            familyname=new_sname,
+                            acctstatus=2,
+                            student_id='',
+                            source="local",
+                            confirmation_code='',
+                            confirmed=True)
+                user.set_password(new_pass)
+                db.session.add(user)
+                db.session.commit()
+
                 flash("New User Account Created for %s" % new_uname)
                 new_uname = ""
                 new_fname = ""
@@ -105,9 +110,9 @@ def setup_usercreate():
                 new_email = ""
                 new_pass = ""
                 new_confirm = ""
-
     if error:
         flash(error)
+
     return render_template(
         'setup_usercreate.html',
         new_uname=new_uname,
@@ -138,12 +143,12 @@ def setup_usersearch():
             if len(needle) < 2:
                 flash("Search term too short, please try something longer")
             else:
-                uids = Users2.find(needle)
-                users = [Users2.get_user(uid) for uid in uids]
+                uids = Users.find(needle)
+                users = [User.get(uid) for uid in uids]
                 if len(users) == 0:
                     nonefound = True
                 else:
-                    users.sort(key=lambda x: x['uname'])
+                    users.sort(key=lambda x: x.uname)
 
     return render_template(
         'setup_usersearch.html',
@@ -162,7 +167,7 @@ def setup_useraudit(audit_id):
         flash("You do not have User Administration access.")
         return redirect(url_for('setup_top'))
 
-    user = Users2.get_user(audit_id)
+    user = User.get(audit_id)
     audits = get_records_by_user(audit_id)
     for aud in audits:
         aud['humantime'] = General.human_date(aud['time'])
@@ -185,7 +190,7 @@ def setup_usersummary(view_id):
 
     is_sysadmin = check_perm(user_id, -1, 'sysadmin')
 
-    user = Users2.get_user(view_id)
+    user = User.get(view_id)
     examids = Exams.get_exams_done(view_id)
     exams = []
     for examid in examids:
@@ -193,12 +198,12 @@ def setup_usersummary(view_id):
         started = General.human_date(exam['start'])
         exam['started'] = started
 
-        exam['viewable'] = satisfy_perms(user_id, exam['cid'], ("viewmarks", ))
+        exam['viewable'] = satisfy_perms(user.id, exam['cid'], ("viewmarks", ))
 
         exams.append(exam)
     exams.sort(key=lambda x: x['start_epoch'], reverse=True)
 
-    course_ids = Users2.get_courses(view_id)
+    course_ids = Users.get_courses(view_id)
     courses = []
     for course_id in course_ids:
         courses.append(Courses2.get_course(course_id))
@@ -220,8 +225,8 @@ def setup_myprofile():
     """ Show an account summary for the current user account. """
     user_id = session['user_id']
 
-    user = Users2.get_user(user_id)
-    course_ids = Users2.get_courses(user_id)
+    user = User.get(user_id)
+    course_ids = Users.get_courses(user_id)
     courses = []
     for course_id in course_ids:
         courses.append(Courses2.get_course(course_id))
@@ -256,9 +261,9 @@ def setup_user_make_sysadmin():
     new_user = request.form.get('userid', None)
     if not new_user:
         abort(400)
-    user = Users2.get_user(new_user)
+    user = User.get(new_user)
     add_perm(new_user, 0, 1)
-    flash("%s is now a system admin on OASIS" % user['uname'])
+    flash("%s is now a system admin on OASIS" % user.uname)
     return redirect(url_for("setup_usersearch"))
 
 
@@ -275,9 +280,9 @@ def setup_user_remove_sysadmin():
     new_user = request.form.get('userid', None)
     if not new_user:
         abort(400)
-    user = Users2.get_user(new_user)
+    user = User.get(new_user)
     delete_perm(new_user, 0, 1)
-    flash("%s is no longer a system admin on OASIS" % user['uname'])
+    flash("%s is no longer a system admin on OASIS" % user.uname)
     return redirect(url_for("setup_usersearch"))
 
 

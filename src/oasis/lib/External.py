@@ -6,7 +6,7 @@
     (except to OASIS database or memcache servers) should come through here.
 """
 
-from oasis.lib import OaConfig, Groups, Feeds, DB, Users2, UFeeds, Users
+from oasis.lib import OaConfig, Groups, Feeds, DB, UFeeds, Users
 from logging import log, ERROR, INFO
 import os
 import subprocess
@@ -15,6 +15,8 @@ import json
 import zipfile
 import shutil
 from StringIO import StringIO
+from oasis.models.User import User
+from oasis import db
 
 
 def feeds_available_group_scripts():
@@ -109,26 +111,26 @@ def group_update_from_feed(group_id, refresh_users=False):
     old_members = group.member_unames()
     new_members = output.split()[1:]
     for uname in new_members:
-        uid = Users2.uid_by_uname(uname)
-        if not uid:
+        user = User.get_by_uname(uname)
+        if not user:
             users_update_from_feed([uname, ])
             log(INFO, "Group feed contained unknown user account %s" % uname)
             unknown.append(uname)
             continue
         if not uname in old_members:
-            group.add_member(uid)
+            group.add_member(user.id)
             added.append(uname)
 
     for uname in old_members:
         if not uname in new_members:
-            uid = Users2.uid_by_uname(uname)
-            group.remove_member(uid)
+            user = User.get_by_uname(uname)
+            group.remove_member(user.id)
             removed.append(uname)
 
     if refresh_users:
         for uname in group.member_unames():
-            uid = Users2.uid_by_uname(uname)
-            user_update_details_from_feed(uid, uname)
+            user = User.get_by_uname(uname)
+            user_update_details_from_feed(user.id, uname)
 
     return added, removed, unknown
 
@@ -138,8 +140,8 @@ def users_update_from_feed(upids):
         feed, updating/creating the accounts if needed.
     """
     for upid in upids:
-        user_id = Users2.uid_by_uname(upid)
-        if not user_id:  # we don't know who they are, so create them.
+        user = User.get_by_uname(upid)
+        if not user:  # we don't know who they are, so create them.
             for feed in UFeeds.all_list():
 
                 try:
@@ -171,27 +173,30 @@ def users_update_from_feed(upids):
                     family = " ".join(name.split(" ")[1:])
                 except ValueError:
                     family = ""
-                Users2.create(upid,
-                              '',
-                              given,
-                              family,
-                              2,
-                              studentid,
-                              email,
-                              None,
-                              'feed',
-                              '',
-                              True)
+                user = User(username=upid,
+                            passwd='',
+                            givenname=given,
+                            familyname=family,
+                            acctstatus=2,
+                            student_id=studentid,
+                            email=email,
+                            expiry=None,
+                            source='feed',
+                            confirmation_code='',
+                            confirmed=True)
+                db.session.add(user)
+                db.session.commit()
                 break
         else:
             log(ERROR,
-                "Error running user feed for existing account %s" % user_id)
+                "Error running user feed for existing account %s" % user.uname)
     return
 
 
 def user_update_details_from_feed(uid, upid):
     """ Refresh the user's details from feed. Maybe their name or ID changed.
     """
+    user = User.get(uid)
     for feed in UFeeds.all_list():
         try:
             out = feeds_run_user_script(feed.script, args=[upid, ])
@@ -223,10 +228,13 @@ def user_update_details_from_feed(uid, upid):
         except ValueError:
             family = ""
 
-        Users.set_email(uid, email)
-        Users.set_givenname(uid, given)
-        Users.set_familyname(uid, family)
-        Users.set_studentid(uid, studentid)
+        user.email = email
+        user.givenname = given
+        user.familyname = family
+        user.student_id = studentid
+
+    db.session.add(user)
+    db.session.commit()
 
 
 def qts_to_zip(qt_ids, fname="oa_export", suffix="oaq"):

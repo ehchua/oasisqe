@@ -15,7 +15,7 @@ from logging import log, ERROR
 from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
-from oasis.lib import OaConfig, Users2, DB, Topics, Permissions, \
+from oasis.lib import OaConfig, DB, Topics, Permissions, \
     Exams, Courses, Courses2, Setup, CourseAdmin, Groups, General, Assess, \
     Spreadsheets
 from oasis.models.User import User
@@ -74,7 +74,7 @@ def cadmin_config(course_id):
 
     user_id = session['user_id']
     is_sysadmin = check_perm(user_id, -1, 'sysadmin')
-    coords = [Users2.get_user(perm[0])
+    coords = [User.get(perm[0]).id
               for perm in Permissions.get_course_perms(course_id)
               if perm[1] == 3]  # course_coord
     groups = Courses.get_groups(course_id)
@@ -323,7 +323,7 @@ def cadmin_exam_results(course_id, exam_id):
     questions = Exams.get_qts_list(exam_id)
     users = {}
     for uid in uids:
-        users[uid] = Users2.get_user(uid)
+        users[uid] = User.get(uid)
     return render_template(
         "cadmin_examresults.html",
         course=course,
@@ -396,7 +396,7 @@ def cadmin_exam_viewmarked(course_id, exam_id, student_uid):
     except AttributeError:
         datesubmit = None
 
-    user = Users2.get_user(student_uid)
+    user = User.get(student_uid)
 
     if submittime and firstview:
         taken = submittime-firstview
@@ -432,8 +432,8 @@ def cadmin_exam_unsubmit(course_id, exam_id, student_uid):
         exam = {}
         abort(404)
     Exams.unsubmit(exam_id, student_uid)
-    user = Users2.get_user(student_uid)
-    flash("""Assessment for %s unsubmitted and timer reset.""" % user['uname'])
+    user = User.get(student_uid)
+    flash("""Assessment for %s unsubmitted and timer reset.""" % user.uname)
     return redirect(url_for("cadmin_exam_viewmarked",
                             course_id=course.id,
                             exam_id=exam['id'],
@@ -513,7 +513,7 @@ def cadmin_editgroup(course_id, group_id):
     if not course:
         abort(404)
     ulist = group.members()
-    members = [Users2.get_user(uid) for uid in ulist]
+    members = [User.get(uid) for uid in ulist]
     return render_template("courseadmin_editgroup.html",
                            course=course,
                            group=group,
@@ -581,9 +581,9 @@ def cadmin_editgroup_member(course_id, group_id):
             op, uid = cmd.split("_", 1)
             if op == "remove":
                 uid = int(uid)
-                user = Users2.get_user(uid)
+                user = User.get(uid)
                 group.remove_member(uid)
-                flash("%s removed from group" % user['uname'])
+                flash("%s removed from group" % user.uname)
                 done = True
 
     if not done:
@@ -916,10 +916,10 @@ def cadmin_permissions(course_id):
     perms = {}
     for uid, pid in permlist:  # (uid, permission)
         if not uid in perms:
-            user = Users2.get_user(uid)
+            user = User.get(uid)
             perms[uid] = {
-                'uname': user['uname'],
-                'fullname': user['fullname'],
+                'uname': user.uname,
+                'fullname': user.fullname,
                 'pids': []
             }
         perms[uid]['pids'].append(pid)

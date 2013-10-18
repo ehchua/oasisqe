@@ -8,7 +8,7 @@
 
 import os
 from flask import render_template, session, request, abort
-from .lib import Users2, DB, General, Practice, Embed
+from .lib import DB, General, Practice, Embed
 
 MYPATH = os.path.dirname(__file__)
 

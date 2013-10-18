@@ -517,8 +517,6 @@ def get_exam_struct(exam_id, user_id=None, include_qtemplates=False,
 def get_marks(group, exam_id):
     """ Fetch the marks for a given user group.
     """
-    results = {}
-
     sql = """
         SELECT u.id, q.qtemplate, q.score, q.firstview, q.marktime
         FROM users AS u,

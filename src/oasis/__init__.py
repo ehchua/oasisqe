@@ -22,7 +22,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from oasis.lib import OaConfig, Users2, Users, DB
+from oasis.lib import OaConfig, Users, DB
 from oasis.lib.Audit import audit
 from oasis.lib.Permissions import satisfy_perms
 
@@ -359,11 +359,13 @@ def login_confirm(code):
     if len(code) > 20:
         abort(404)
 
-    uid = Users.verify_confirm_code(code)
-    if not uid:
+    user = User.find_by_confirmation_code(code)
+    if not user:
         abort(404)
-    Users.set_confirm(uid)
-    Users.set_confirm_code(uid, "")
+    user.confirmed = True
+    user.confirmation_code = ""
+    db.session.add(user)
+    db.session.commit()
     return render_template("login_signup_confirmed.html")
 
 
@@ -377,21 +379,22 @@ def login_email_passreset(code):
     if len(code) > 20:
         abort(404)
 
-    uid = Users.verify_confirm_code(code)
-    if not uid:
+    user = User.find_by_confirmation_code(code)
+    if not user:
         abort(404)
-    Users.set_confirm(uid)
-    Users.set_confirm_code(uid, "")
-    user = Users2.get_user(uid)
-    session['username'] = user['uname']
-    session['user_id'] = uid
-    session['user_givenname'] = user['givenname']
-    session['user_familyname'] = user['familyname']
-    session['user_fullname'] = user['fullname']
+    user.confirmed = True
+    user.confirmation_code = ""
+    session['username'] = user.uname
+    session['user_id'] = user.id
+    session['user_givenname'] = user.givenname
+    session['user_familyname'] = user.familyname
+    session['user_fullname'] = user.fullname
     session['user_authtype'] = "local"
-    audit(1, uid, uid, "UserAuth",
+    audit(1, user.id, user.id, "UserAuth",
           "%s logged in using password reset email" % (session['username'],))
 
+    db.session.add(user)
+    db.session.commit(user)
     flash("Please change your password")
     return redirect(url_for("setup_change_pass"))
 
@@ -438,26 +441,30 @@ def login_signup_submit():
               "please try another username.")
         return redirect(url_for("login_signup"))
 
-    code = Users.gen_confirm_code()
-    newuid = Users.create(uname=username,
-                          passwd="NOLOGIN",
-                          email=email,
-                          givenname=username,
-                          familyname="",
-                          acctstatus=1,
-                          studentid="",
-                          source="local",
-                          confirm_code=code,
-                          confirm=False)
-    Users2.set_password(newuid, password)
+    user = User(uname=username,
+                passwd="NOLOGIN",
+                email=email,
+                givenname=username,
+                familyname="",
+                acctstatus=1,
+                studentid="",
+                source="local",
+                confirmation_code="",
+                confirmed=False)
+    user.set_password(password)
+    code = user.gen_confirm_code()
+    db.session.add(user)
+    db.session.commit()
 
-    text_body = render_template(os.path.join("email", "confirmation.txt"), code=code)
-    html_body = render_template(os.path.join("email", "confirmation.html"), code=code)
+    text = render_template(os.path.join("email", "confirmation.txt"),
+                           code=code)
+    html = render_template(os.path.join("email", "confirmation.html"),
+                           code=code)
     send_email(email,
                from_addr=None,
                subject="OASIS Signup Confirmation",
-               text_body=text_body,
-               html_body=html_body)
+               text_body=text,
+               html_body=html)
 
     return render_template("login_signup_submit.html", email=email)
 
@@ -485,13 +492,19 @@ def login_webauth_submit():
 
     username = request.environ['REMOTE_USER']
 
+    #  TODO: this is for UofA, how do we make it more general?
     if '@' in username:
-        username = username.split('@')[0] #  TODO: this is for UofA, how do we make it more general?
+        username = username.split('@')[0]
 
     user = User.get_by_uname(username)
     if not user:
-        Users2.create(username, '', '', '', 1, '', '', None, 'unknown', '', True)
-        user = Users.get_by_uname(username)
+        user = User(username=username, givenname='', familyname='', email='',
+                    acctstatus=1, student_id='', source="",
+                    expiry='', confirmation_code='', confirmed=True)
+        db.session.add(user)
+        audit(1, user.id, user.id, "UserAuth",
+              "creating local account for webauth user %s" % username)
+        db.session.commit()
 
     session['username'] = username
     session['user_id'] = user.id
@@ -501,7 +514,7 @@ def login_webauth_submit():
     session['user_authtype'] = "httpauth"
 
     audit(1, user.id, user.id, "UserAuth",
-          "%s successfully logged in via webauth" % session['username'])
+          "%s successfully logged in via webauth" % username)
 
     if 'redirect' in session:
         target = OaConfig.parentURL + session['redirect']

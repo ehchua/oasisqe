@@ -14,7 +14,8 @@ import _strptime  # import should prevent thread import blocking issues
 
 from oasis.lib.Permissions import get_course_perms, add_perm, delete_perm
 from oasis.lib.Audit import audit
-from oasis.lib import Users2, DB, Topics, General, Exams, Courses
+from oasis.lib import DB, Topics, General, Exams, Courses
+from oasis.models.User import User
 
 
 def do_topic_update(course, request):
@@ -93,11 +94,11 @@ def save_perms(request, cid, user_id):
     perms = {}
     users = {}
     for perm in permlist:
-        u = Users2.get_user(perm[0])
-        uname = u['uname']
+        u = User.get(perm[0])
+        uname = u.uname
         if not uname in users:
             users[uname] = {}
-        users[uname]['fullname'] = u['fullname']
+        users[uname]['fullname'] = u.fullname
 
         if not uname in perms:
             perms[uname] = []
@@ -117,52 +118,52 @@ def save_perms(request, cid, user_id):
             newperms[uname].append(perm)
 
         for uname in users:
-            uid = Users2.uid_by_uname(uname)
+            u = User.get_by_uname(uname)
             for perm in [2, 5, 10, 14, 11, 8, 9, 15]:
                 if uname in newperms and perm in newperms[uname]:
                     if not perm in perms[uname]:
-                        add_perm(uid, cid, perm)
+                        add_perm(u.id, cid, perm)
                         audit(
                             1,
                             user_id,
-                            uid,
+                            u.id,
                             "CourseAdmin",
                             "%s given %s permission by %s" % (uname, get_perm_short(perm), user_id,)
                         )
                 else:
                     if uname in perms and perm in perms[uname]:
-                        delete_perm(uid, cid, perm)
+                        delete_perm(u.id, cid, perm)
                         audit(
                             1,
                             user_id,
-                            uid,
+                            u.id,
                             "CourseAdmin",
                             "%s had %s permission revoked by %s" % (uname, get_perm_short(perm), user_id,)
                         )
 
         for uname in newperms:
-            uid = Users2.uid_by_uname(uname)
+            u = User.get_by_uname(uname)
             if not uname in perms:
                 # We've added a user
                 for perm in [2, 5, 10, 14, 11, 8, 9, 15]:
                     if perm in newperms[uname]:
-                        add_perm(uid, cid, perm)
+                        add_perm(u.id, cid, perm)
                         audit(
                             1,
                             user_id,
-                            uid,
+                            u.id,
                             "CourseAdmin",
                             "%s given %s permission by %s" % (uname, get_perm_short(perm), user_id,)
                         )
         if "adduser" in form:
             newuname = form['adduser']
-            newuid = Users2.uid_by_uname(newuname)
-            if newuid:
-                add_perm(newuid, cid, 10)
+            new_user = User.get_by_uname(newuname)
+            if new_user:
+                add_perm(new_user.id, cid, 10)
                 audit(
                     1,
                     user_id,
-                    newuid,
+                    new_user.id,
                     "CourseAdmin",
                     "%s given '%s' permission by %s" % (newuname, get_perm_short(10), user_id,)
                 )

@@ -16,8 +16,7 @@ from flask import render_template, session, \
     send_file, Response
 from logging import log, INFO
 
-from .lib import Users2, DB, Topics, \
-    Courses2, Attach, QEditor
+from .lib import DB, Topics, Courses2, Attach, QEditor
 
 MYPATH = os.path.dirname(__file__)
 
@@ -25,6 +24,7 @@ from .lib.Audit import audit
 from .lib.Permissions import check_perm
 
 from oasis import app, authenticated
+from .models.User import User
 
 
 # Does its own auth because it may be used in embedded questions
@@ -218,11 +218,11 @@ def qedit_raw_save(topic_id, qt_id):
                                 topic_id=topic_id))
 
     version = DB.incr_qt_version(qt_id)
-    owner = Users2.get_user(user_id)
+    owner = User.get(user_id)
     DB.update_qt_owner(qt_id, user_id)
     audit(3, user_id, qt_id, "qeditor",
           "version=%s,message=%s" %
-          (version, "Edited: ownership set to %s" % owner['uname']))
+          (version, "Edited: ownership set to %s" % owner.uname))
 
     if 'qtitle' in form:
         qtitle = form['qtitle']
