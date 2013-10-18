@@ -432,7 +432,7 @@ def login_signup_submit():
         flash("Email address doesn't appear to be valid")
         return redirect(url_for("login_signup"))
 
-    existing = Users2.uid_by_uname(username)
+    existing = User.get_by_uname(username)
     if existing:
         flash("An account with that name already exists, "
               "please try another username.")
@@ -487,20 +487,20 @@ def login_webauth_submit():
 
     if '@' in username:
         username = username.split('@')[0] #  TODO: this is for UofA, how do we make it more general?
-    user_id = Users2.uid_by_uname(username)
-    if not user_id:
-        Users2.create(username, '', '', '', 1, '', '', None, 'unknown', '', True)
-        user_id = Users2.uid_by_uname(username)
 
-    user = Users2.get_user(user_id)
+    user = User.get_by_uname(username)
+    if not user:
+        Users2.create(username, '', '', '', 1, '', '', None, 'unknown', '', True)
+        user = Users.get_by_uname(username)
+
     session['username'] = username
-    session['user_id'] = user_id
-    session['user_givenname'] = user['givenname']
-    session['user_familyname'] = user['familyname']
-    session['user_fullname'] = user['fullname']
+    session['user_id'] = user.id
+    session['user_givenname'] = user.givenname
+    session['user_familyname'] = user.familyname
+    session['user_fullname'] = user.fullname
     session['user_authtype'] = "httpauth"
 
-    audit(1, user_id, user_id, "UserAuth",
+    audit(1, user.id, user.id, "UserAuth",
           "%s successfully logged in via webauth" % session['username'])
 
     if 'redirect' in session:

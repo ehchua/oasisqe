@@ -18,6 +18,7 @@ from flask import render_template, session, request, redirect, \
 from oasis.lib import OaConfig, Users2, DB, Topics, Permissions, \
     Exams, Courses, Courses2, Setup, CourseAdmin, Groups, General, Assess, \
     Spreadsheets
+from oasis.models.User import User
 
 MYPATH = os.path.dirname(__file__)
 
@@ -540,16 +541,16 @@ def cadmin_editgroup_addperson(course_id, group_id):
     new_uname = request.form['uname']
     # TODO: Sanitize username
     try:
-        new_uid = Users2.uid_by_uname(new_uname)
+        new_user = User.get_by_uname(new_uname)
     except KeyError:
         flash("User '%s' Not Found" % new_uname)
     else:
-        if not new_uid:
+        if not new_user.id:
             flash("User '%s' Not Found" % new_uname)
-        elif new_uid in group.members():
+        elif new_user.id in group.members():
             flash("%s is already in the group." % new_uname)
         else:
-            group.add_member(new_uid)
+            group.add_member(new_user.id)
             flash("Added %s to group." % (new_uname,))
 
     return redirect(url_for('cadmin_editgroup',
@@ -607,15 +608,15 @@ def cadmin_assign_coord(course_id):
     new_uname = request.form['coord']
     # TODO: Sanitize username
     try:
-        new_uid = Users2.uid_by_uname(new_uname)
+        new_user = User.get_by_uname(new_uname)
     except KeyError:
         flash("User '%s' Not Found" % new_uname)
     else:
-        if not new_uid:
+        if not new_user:
             flash("User '%s' Not Found" % new_uname)
         else:
-            Permissions.add_perm(new_uid, course_id, 3)  # courseadmin
-            Permissions.add_perm(new_uid, course_id, 4)  # coursecoord
+            Permissions.add_perm(new_user.id, course_id, 3)  # courseadmin
+            Permissions.add_perm(new_user.id, course_id, 4)  # coursecoord
             flash("%s can now control the course." % (new_uname,))
 
     return redirect(url_for('cadmin_config', course_id=course_id))
@@ -631,15 +632,15 @@ def cadmin_remove_coord(course_id, coordname):
         abort(404)
 
     try:
-        new_uid = Users2.uid_by_uname(coordname)
+        new_user = User.get_by_uname(coordname)
     except KeyError:
         flash("User '%s' Not Found" % coordname)
     else:
-        if not new_uid:
+        if not new_user:
             flash("User '%s' Not Found" % coordname)
         else:
-            Permissions.delete_perm(new_uid, course_id, 3)  # courseadmin
-            Permissions.delete_perm(new_uid, course_id, 4)  # coursecoord
+            Permissions.delete_perm(new_user.id, course_id, 3)  # courseadmin
+            Permissions.delete_perm(new_user.id, course_id, 4)  # coursecoord
             flash("%s can no longer control the course." % (coordname,))
 
     return redirect(url_for('cadmin_config', course_id=course_id))

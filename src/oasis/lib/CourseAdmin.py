@@ -84,7 +84,9 @@ def get_perm_short(pid):
 
 
 def save_perms(request, cid, user_id):
-    """ Save permission changes
+    """ Save permission changes.
+        cid: Course
+        user_id: User setting the permissions
     """
 
     permlist = get_course_perms(cid)

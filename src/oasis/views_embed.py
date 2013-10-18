@@ -13,6 +13,7 @@ from .lib import Users2, DB, General, Practice, Embed
 MYPATH = os.path.dirname(__file__)
 
 from oasis import app
+from oasis.models.User import User
 
 
 @app.route("/embed/question/<embed_id>/question.html")
@@ -24,9 +25,9 @@ def embed_question(embed_id):
 
     valid = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!.,?$@&"
     if 'user_id' not in session:
-        user_id = Users2.uid_by_uname("guest")
+        user = User.get_by_uname("guest")
     else:
-        user_id = session['user_id']
+        user = session['user_id']
 
     if len(embed_id) < 1:
         abort(404)
@@ -40,10 +41,10 @@ def embed_question(embed_id):
     title = ''.join([t for t in title
                      if t in valid])
 
-    q_id = Practice.get_practice_q(qt_id, user_id)
+    q_id = Practice.get_practice_q(qt_id, user.id)
     vers = DB.get_q_version(q_id)
     if not vers >= DB.get_qt_version(qt_id):
-        q_id = General.gen_q(qt_id, user_id)
+        q_id = General.gen_q(qt_id, user.id)
 
     q_body = General.render_q_html(q_id)
     return render_template(
@@ -62,9 +63,9 @@ def embed_mark_question(embed_id):
         This should be suitable for including in an IFRAME or similar
     """
     if 'user_id' not in session:
-        user_id = Users2.uid_by_uname("guest")
+        user = User.get_by_uname("guest")
     else:
-        user_id = session['user_id']
+        user = session['user_id']
 
     qt_id = DB.get_qt_by_embedid(embed_id)
     if not qt_id:
@@ -77,7 +78,7 @@ def embed_mark_question(embed_id):
     if not q_id:
         abort(404)
 
-    marking = Embed.mark_q(user_id, qt_id, request)
+    marking = Embed.mark_q(user.id, qt_id, request)
 
     return render_template(
         "embedmarkquestion.html",
