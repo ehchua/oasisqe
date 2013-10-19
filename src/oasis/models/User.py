@@ -4,7 +4,7 @@
 # http://www.gnu.org/licenses/agpl-3.0.html
 
 import logging
-from logging import log, INFO, ERROR
+from logging import log, INFO, ERROR, WARN
 import hashlib, bcrypt
 from sqlalchemy import Column, Integer, String, DateTime
 from oasis import db
@@ -48,6 +48,27 @@ class User(db.Model):
 
         return u"%s %s" % (self.givenname, self.familyname)
 
+    #TODO: SQLAlchemyify
+    def get_groups(self):
+        """ Return a list of groups the user is a member of.  """
+
+        res = db.engine.execute("SELECT groupid FROM usergroups WHERE userid=%s;", self.id)
+        if res:
+            return [int(row[0]) for row in res.fetchall()]
+        log(WARN, "Request for unknown user or user in no groups.")
+        return []
+
+    #TODO: SQLAlchemify
+    def get_courses(self):
+        """ Return a list of the Course IDs of the courses the user is in """
+
+        courses = []
+        for gid in self.get_groups():
+            res = db.engine.execute("SELECT course FROM groupcourses WHERE groupid=%s;", gid)
+            if res:
+                course_id = int(res.first()[0])
+                courses.append(course_id)
+        return courses
 
     # --- Static Methods ---
 
@@ -101,3 +122,41 @@ class User(db.Model):
             return False
         return User.query.filter_by(confirmation_code=code).first()
 
+    #TODO: SQLAlchemify
+    @staticmethod
+    def find(search, limit=20):
+        """ return a list of user id's that reasonably match the search term.
+            Search username then student ID then surname then first name.
+            Return results in that order.
+        """
+        res = db.engine.execute("""SELECT id FROM users
+                        WHERE LOWER(uname) LIKE LOWER(%s)
+                        OR LOWER(familyname) LIKE LOWER(%s)
+                        OR LOWER(givenname) LIKE LOWER(%s)
+                        OR student_id LIKE %s
+                        OR LOWER(email) LIKE LOWER(%s) LIMIT %s;""",
+                  (search, search, search, search, search, limit))
+
+        if res:
+            return [int(row[0]) for row in res.fetchall()]
+
+        return []
+
+    #TODO: SQLAlchemify
+    @staticmethod
+    def typeahead(search, limit=20):
+        """ return a list of user id's that reasonably match the search term.
+            Search username then student ID then surname then first name.
+            Return results in that order.
+        """
+        res = db.engine.execute("""SELECT id
+                         FROM users
+                         WHERE
+                             LOWER(uname) LIKE LOWER(%s)
+                           OR
+                             LOWER(email) LIKE LOWER(%s)
+                         LIMIT %s;""",
+                      (search, search, limit))
+        if res:
+            return [int(row[0]) for row in res.fetchall()]
+        return []

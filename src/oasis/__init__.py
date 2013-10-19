@@ -22,7 +22,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from oasis.lib import OaConfig, Users, DB
+from oasis.lib import OaConfig, DB
 from oasis.lib.Audit import audit
 from oasis.lib.Permissions import satisfy_perms
 

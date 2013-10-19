@@ -11,7 +11,7 @@ import os
 from flask import render_template, session, \
     request, redirect, url_for, flash, abort
 
-from oasis.lib import Users, General, Exams, \
+from oasis.lib import General, Exams, \
     Courses2, Setup
 
 MYPATH = os.path.dirname(__file__)
@@ -143,7 +143,7 @@ def setup_usersearch():
             if len(needle) < 2:
                 flash("Search term too short, please try something longer")
             else:
-                uids = Users.find(needle)
+                uids = User.find(needle)
                 users = [User.get(uid) for uid in uids]
                 if len(users) == 0:
                     nonefound = True
@@ -203,7 +203,7 @@ def setup_usersummary(view_id):
         exams.append(exam)
     exams.sort(key=lambda x: x['start_epoch'], reverse=True)
 
-    course_ids = Users.get_courses(view_id)
+    course_ids = user.get_courses()
     courses = []
     for course_id in course_ids:
         courses.append(Courses2.get_course(course_id))
@@ -226,7 +226,7 @@ def setup_myprofile():
     user_id = session['user_id']
 
     user = User.get(user_id)
-    course_ids = Users.get_courses(user_id)
+    course_ids = user.get_courses()
     courses = []
     for course_id in course_ids:
         courses.append(Courses2.get_course(course_id))

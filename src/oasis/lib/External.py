@@ -6,7 +6,7 @@
     (except to OASIS database or memcache servers) should come through here.
 """
 
-from oasis.lib import OaConfig, Groups, Feeds, DB, UFeeds, Users
+from oasis.lib import OaConfig, Groups, Feeds, DB, UFeeds
 from logging import log, ERROR, INFO
 import os
 import subprocess

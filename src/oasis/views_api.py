@@ -20,8 +20,6 @@ from oasis.lib import Exams, API, Stats
 MYPATH = os.path.dirname(__file__)
 
 from oasis.lib.Permissions import satisfy_perms
-from oasis.lib import Users
-
 from oasis import app, authenticated, require_perm
 
 
