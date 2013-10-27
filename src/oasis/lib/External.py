@@ -6,7 +6,7 @@
     (except to OASIS database or memcache servers) should come through here.
 """
 
-from oasis.lib import OaConfig, Groups, Feeds, DB, UFeeds
+from oasis.lib import OaConfig, DB
 from logging import log, ERROR, INFO
 import os
 import subprocess
@@ -16,6 +16,9 @@ import zipfile
 import shutil
 from StringIO import StringIO
 from oasis.models.User import User
+from oasis.models.Group import Group
+from oasis.models.Feed import Feed
+from oasis.models.UFeed import UFeed
 from oasis import db
 
 
@@ -93,11 +96,11 @@ def group_update_from_feed(group_id, refresh_users=False):
     """ Update group membership from it's feed
         Returns (added, removed, unknown) with usernames of users
     """
-    group = Groups.Group(g_id=group_id)
+    group = Group.get(group_id)
     if not group.source == 'feed':
         return
 
-    feed = Feeds.Feed(f_id=group.feed)
+    feed = Feed.get(group.feed)
     scriptrun = ' '.join([feed.script, group.feedargs])
     try:
         output = feeds_run_group_script(feed.script, args=[group.feedargs, ])
@@ -142,7 +145,7 @@ def users_update_from_feed(upids):
     for upid in upids:
         user = User.get_by_uname(upid)
         if not user:  # we don't know who they are, so create them.
-            for feed in UFeeds.all_list():
+            for feed in UFeed.all_list():
 
                 try:
                     out = feeds_run_user_script(feed.script, args=[upid, ])
@@ -197,7 +200,7 @@ def user_update_details_from_feed(uid, upid):
     """ Refresh the user's details from feed. Maybe their name or ID changed.
     """
     user = User.get(uid)
-    for feed in UFeeds.all_list():
+    for feed in UFeed.all_list():
         try:
             out = feeds_run_user_script(feed.script, args=[upid, ])
         except BaseException, err:

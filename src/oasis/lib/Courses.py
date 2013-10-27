@@ -6,14 +6,14 @@
 """ Courses.py
     Handle course related operations.
 """
-from oasis.lib import Topics, Groups
+from oasis.lib import Topics
 
 from oasis.lib.DB import run_sql, dbpool, MC
 from logging import log, ERROR
 import datetime
-import _strptime  # import should prevent thread import blocking issues
-                  # ask Google about:     AttributeError: _strptime
 
+from oasis import db
+from oasis.models.Group import Group
 # WARNING: name and title are stored in the database as: title, description
 
 
@@ -122,7 +122,7 @@ def set_assess_vis(cid, visibility):
 def get_users(course_id):
     """ Return a list of users in the course"""
     allusers = []
-    for g_id, group in Groups.active_by_course(course_id).iteritems():
+    for g_id, group in Group.active_by_course(course_id).iteritems():
         allusers.append(group.members())
     return allusers
 
@@ -261,7 +261,7 @@ def create(name, description, owner, coursetype):
 def get_groups(course_id):
     """ Return a dict of groups currently attached to this course."""
 
-    return Groups.active_by_course(course_id)
+    return Group.active_by_course(course_id)
 
 
 def add_group(group_id, course_id):
@@ -390,9 +390,9 @@ def _create_config_demonstration(course_id, period_id):
     course = get_course(course_id)
     # An ad-hoc Staff group
     name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Staff" % (course['name'],)
@@ -402,16 +402,17 @@ def _create_config_demonstration(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
 
-    group = Groups.get_by_name(name)
+    db.session.add(group)
+    db.session.commit()
+
     add_group(group.id, course_id)
 
     # An Open Registration student group
     name = "C_%s_OPEN_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Students, Self Registered" % (course['name'],)
@@ -421,16 +422,17 @@ def _create_config_demonstration(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
 
-    group = Groups.get_by_name(name)
+    db.session.add(group)
+    db.session.commit()
+
     add_group(group.id, course_id)
 
     # An ad-hoc student group
     name = "C_%s_ADHOC_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Students" % (course['name'],)
@@ -440,9 +442,9 @@ def _create_config_demonstration(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
+    db.session.add(group)
+    db.session.commit()
 
-    group = Groups.get_by_name(name)
     add_group(group.id, course_id)
 
 
@@ -453,9 +455,9 @@ def _create_config_casual(course_id, period_id):
     course = get_course(course_id)
     # An ad-hoc Staff group
     name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group.get(g_id=0)
 
     group.name = name
     group.title = "%s, Staff" % (course['name'],)
@@ -465,16 +467,17 @@ def _create_config_casual(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
 
-    group = Groups.get_by_name(name)
+    db.session.add(group)
+    db.session.commit(group)
+
     add_group(group.id, course_id)
 
     # An ad-hoc student group
     name = "C_%s_ADHOC_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Students" % (course['name'],)
@@ -484,8 +487,10 @@ def _create_config_casual(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
-    group = Groups.get_by_name(name)
+
+    db.session.add(group)
+    db.session.commit(group)
+
     add_group(group.id, course_id)
 
 
@@ -504,9 +509,9 @@ def _create_config_standard(course_id, period_id):
     course = get_course(course_id)
     # An ad-hoc Staff group
     name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Staff" % (course['name'],)
@@ -516,15 +521,17 @@ def _create_config_standard(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
-    group = Groups.get_by_name(name)
+
+    db.session.add(group)
+    db.session.commit()
+
     add_group(group.id, course_id)
 
     # An ad-hoc student group
     name = "C_%s_ADHOC_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Students" % (course['name'],)
@@ -534,8 +541,10 @@ def _create_config_standard(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
-    group = Groups.get_by_name(name)
+
+    db.session.add(group)
+    db.session.commit()
+
     add_group(group.id, course_id)
 
 
@@ -556,9 +565,9 @@ def _create_config_large(course_id, period_id):
     course = get_course(course_id)
     # An ad-hoc Staff group
     name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Staff" % (course['name'],)
@@ -568,15 +577,17 @@ def _create_config_large(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
-    group = Groups.get_by_name(name)
+
+    db.session.add(group)
+    db.session.commit()
+
     add_group(group.id, course_id)
 
     # An ad-hoc student group
     name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Groups.get_by_name(name)
+    group = Group.get_by_name(name)
     if not group:
-        group = Groups.Group(g_id=0)
+        group = Group()
 
     group.name = name
     group.title = "%s, Students" % (course['name'],)
@@ -586,8 +597,10 @@ def _create_config_large(course_id, period_id):
     group.feed = None
     group.feedargs = ""
     group.active = True
-    group.save()
-    group = Groups.get_by_name(name)
+
+    db.session.add(group)
+    db.session.commit()
+
     add_group(group.id, course_id)
 
 

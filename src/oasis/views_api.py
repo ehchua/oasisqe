@@ -9,13 +9,11 @@
 
 import os
 import datetime
-import _strptime  # import should prevent thread import blocking issues
-                  # ask Google about:     AttributeError: _strptime
-
 
 from flask import session, abort, jsonify, request
 # from logging import log, ERROR, INFO
 from oasis.lib import Exams, API, Stats
+from oasis.models.User import User
 
 MYPATH = os.path.dirname(__file__)
 
@@ -163,5 +161,5 @@ def api_users_typeahead():
     if not needle:
         matches = ['eric', 'ernie', 'columbia']
     else:
-        matches = Users.typeahead(needle)
+        matches = User.typeahead(needle)
     return jsonify(result=matches)

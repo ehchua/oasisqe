@@ -10,17 +10,17 @@
 
 import os
 from datetime import datetime
-import _strptime  # import should prevent thread import blocking issues
-                  # ask Google about:     AttributeError: _strptime
-
 from flask import render_template, \
     request, redirect, abort, url_for, flash
 
-from oasis.lib import Courses, Courses2, Setup, Periods, Feeds, External, UFeeds
+from oasis.lib import Courses, Courses2, Setup, External, UFeeds
 
 MYPATH = os.path.dirname(__file__)
-from .lib import DB, Groups
-from oasis import app, require_perm
+from .lib import DB
+from oasis import app, require_perm, db
+from .models.Group import Group
+from .models.Feed import Feed
+from .models.Period import Period
 # from logging import log, INFO
 
 
@@ -41,7 +41,7 @@ def admin_top():
 def admin_feeds():
     """ Present menu page of enrolment related options """
 
-    feeds = Feeds.all_list()
+    feeds = Feed.all_list()
     return render_template(
         "admin_group_feeds.html",
         feeds=feeds
@@ -78,7 +78,7 @@ def admin_userfeeds():
 @require_perm('sysadmin')
 def admin_periods():
     """ Present page to administer time periods in the system """
-    periods = Periods.all_list()
+    periods = Period.all_list()
 
     return render_template(
         "admin_periods.html",
@@ -90,8 +90,8 @@ def admin_periods():
 @require_perm('sysadmin')
 def admin_groups():
     """ Present page to administer time periods in the system """
-    groups = Groups.all_groups()
-    inactive_groups = [group for group in groups if group.period_obj().historical()]
+    groups = Group.all_groups()
+    inactive_groups = [group for group in groups if group.period_obj().historical()] # TODO: Needs this method added to group
     return render_template(
         "admin_groups.html",
         groups=groups,
@@ -103,14 +103,16 @@ def admin_groups():
 @require_perm('sysadmin')
 def admin_add_group():
     """ Present page to add a group to the system """
-    feeds = Feeds.all_list()
-    periods = Periods.all_list()
-    gtypes = Groups.all_gtypes()
+    feeds = Feed.all_list()
+    periods = Period.all_list()
+    gtypes = Group.all_gtypes()
+    group = Group()
+    group.gtype=1
     return render_template(
         "admin_editgroup.html",
         feeds=feeds,
         periods=periods,
-        group=Groups.Group(gtype=1),
+        group=group,
         gtypes=gtypes
     )
 
@@ -119,10 +121,10 @@ def admin_add_group():
 @require_perm('sysadmin')
 def admin_edit_group(g_id):
     """ Present page to add a group to the system """
-    feeds = Feeds.all_list()
-    periods = Periods.all_list()
-    group = Groups.Group(g_id=g_id)
-    gtypes = Groups.all_gtypes()
+    feeds = Feed.all_list()
+    periods = Period.all_list()
+    group = Group.get(g_id)
+    gtypes = Group.all_gtypes()
     return render_template(
         "admin_editgroup.html",
         feeds=feeds,
@@ -152,13 +154,13 @@ def admin_edit_group_submit(g_id):
 
     group = None
     if g_id == 0:  # It's a new one being created
-        if Groups.get_ids_by_name(name):
+        if Group.get_by_name(name):
             error = "A Group with that name already exists!"
         else:
-            group = Groups.Group(g_id=0)
+            group = Group()
     else:
         try:
-            group = Groups.Group(g_id=g_id)
+            group = Group.get(g_id)
         except KeyError:
             return abort(404)
 
@@ -177,7 +179,7 @@ def admin_edit_group_submit(g_id):
             group.feedargs = feed_args
             group.active = True
 
-            group.save()
+            db.session.add(group)
         except KeyError, err:  # Probably a duplicate or something
             error = "Can't Save: %s" % err
 
@@ -185,6 +187,7 @@ def admin_edit_group_submit(g_id):
         flash(error)
         return redirect(url_for("admin_edit_group", g_id=group.id))
 
+    db.session.commit()
     flash("Changes saved", category='success')
     return redirect(url_for("admin_groups"))
 
@@ -194,7 +197,7 @@ def admin_edit_group_submit(g_id):
 def admin_edit_period(p_id):
     """ Present page to edit a time period in the system """
     try:
-        period = Periods.Period(p_id=p_id)
+        period = Period.get(p_id)
     except KeyError:
         return abort(404)
     else:
@@ -211,7 +214,7 @@ def admin_edit_period(p_id):
 def admin_edit_feed(feed_id):
     """ Present page to edit a feed in the system """
     try:
-        feed = Feeds.Feed(f_id=feed_id)
+        feed = Feed.get(feed_id)
     except KeyError:
         return abort(404)
     try:
@@ -306,14 +309,14 @@ def group_test_feed_output(group_id):
     output = ""
     group = None
     try:
-        group = Groups.Group(g_id=group_id)
+        group = Group.get(g_id=group_id)
     except KeyError:
         abort(401)
     if not group.source == "feed":
         abort(401)
 
-    feed = Feeds.Feed(f_id=group.feed)
-    period = Periods.Period(p_id=group.period)
+    feed = Feed.get(group.feed)
+    period = Period.get(group.period)
     scriptrun = ' '.join([feed.script, group.feedargs, period.code])
     try:
         output = External.feeds_run_group_script(feed.script, args=[group.feedargs, period.code])
@@ -339,7 +342,7 @@ def admin_group_update_from_feed(group_id):
     unknown = []
     error = None
     try:
-        group = Groups.Group(g_id=group_id)
+        group = Group.get(g_id=group_id)
     except KeyError:
         abort(401)
 
@@ -388,8 +391,7 @@ def admin_edit_group_feed_submit(feed_id):
     active = request.form.get('active', 'inactive') == 'active'
 
     if feed_id == 0:  # It's a new one being created
-        feed = Feeds.Feed(
-            f_id=0,
+        feed = Feed(
             name=name,
             title=title,
             script=script,
@@ -400,7 +402,7 @@ def admin_edit_group_feed_submit(feed_id):
         )
     else:
         try:
-            feed = Feeds.Feed(f_id=feed_id)
+            feed = Feed.get(feed_id)
         except KeyError:
             return abort(404)
 
@@ -421,7 +423,9 @@ def admin_edit_group_feed_submit(feed_id):
         )
 
     try:
-        feed.save()
+        db.session.add(feed)
+        db.session.commit()
+
     except ValueError, err:  # Probably a duplicate or something
         flash("Can't Save: %s" % err)
         return render_template(
@@ -525,17 +529,16 @@ def admin_edit_period_submit(p_id):
     code = request.form.get('code', None)
 
     if p_id == 0:  # It's a new one being created
-        period = Periods.Period(
-            p_id=0,
-            name=name,
-            title=title,
-            code=code,
-            start=start,
-            finish=finish
-        )
+        period = Period()
+        period.name = name,
+        period.title = title,
+        period.code = code,
+        period.start = start,
+        period.finish = finish
+
     else:
         try:
-            period = Periods.Period(p_id=p_id)
+            period = Period.get(p_id)
         except KeyError:
             return abort(404)
 
@@ -562,7 +565,8 @@ def admin_edit_period_submit(p_id):
         error = "That time period is not editable!"
 
     try:
-        period.save()
+        db.session.add(period)
+        db.session.commit()
     except ValueError, err:  # Probably a duplicate or something
         error = "Can't Save: %s" % err
 
@@ -584,10 +588,10 @@ def admin_course(course_id):
 
     course = Courses2.get_course(course_id)
     course['size'] = len(Courses.get_users(course_id))
-    groups = Courses.get_groups(course_id)
+    groups = Courses.get_groups(course_id)  # TODO: this needs to be groups
     choosegroups = [group
-                    for g_id, group in Groups.enrolment_groups().iteritems()
-                    if not g_id in groups]
+                    for group in Group.enrolment_groups()
+                    if not group in groups]
     return render_template(
         "cadmin_course.html",
         course=course,
@@ -644,7 +648,7 @@ def admin_course_save(course_id):
         if newgroup:
             Courses.add_group(newgroup, course_id)
             changed = True
-            group = Groups.Group(newgroup)
+            group = Group.get(newgroup)
             flash("Group %s added." % group.name)
 
     if changed:

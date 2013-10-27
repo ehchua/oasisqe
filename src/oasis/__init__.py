@@ -12,8 +12,6 @@ from flask import Flask, session, redirect, url_for, request, \
     render_template, render_template_string, flash, abort
 import datetime
 import os
-import _strptime  # import should prevent thread import blocking issues
-                  # ask Google about:     AttributeError: _strptime
 import logging
 from logging import log, INFO, ERROR
 from logging.handlers import SMTPHandler, RotatingFileHandler

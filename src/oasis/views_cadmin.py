@@ -8,15 +8,14 @@
 
 import os
 from datetime import datetime
-import _strptime  # import should prevent thread import blocking issues
-                  # ask Google about:     AttributeError: _strptime
+
 from logging import log, ERROR
 
 from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
 from oasis.lib import OaConfig, DB, Topics, Permissions, \
-    Exams, Courses, Courses2, Setup, CourseAdmin, Groups, General, Assess, \
+    Exams, Courses, Courses2, Setup, CourseAdmin, General, Assess, \
     Spreadsheets
 from oasis.models.User import User
 
@@ -25,7 +24,7 @@ MYPATH = os.path.dirname(__file__)
 from oasis.lib.Permissions import satisfy_perms, check_perm
 from oasis.lib.General import date_from_py2js
 from oasis.lib import External
-
+from oasis.models.Group import Group
 
 from oasis import app, require_course_perm, require_perm
 
@@ -51,7 +50,7 @@ def cadmin_top(course_id):
     exams.sort(key=lambda y: y['start_epoch'], reverse=True)
     groups = Courses.get_groups(course_id)
     choosegroups = [group
-                    for group in Groups.all_groups()
+                    for group in Group.all_groups()
                     if not group.id in groups]
     return render_template(
         "courseadmin_top.html",
@@ -79,7 +78,7 @@ def cadmin_config(course_id):
               if perm[1] == 3]  # course_coord
     groups = Courses.get_groups(course_id)
     choosegroups = [group
-                    for group in Groups.all_groups()
+                    for group in Group.all_groups()
                     if not group.id in groups]
     return render_template(
         "courseadmin_config.html",
@@ -305,9 +304,9 @@ def cadmin_exam_results(course_id, exam_id):
     exam['start_minute'] = int(exam['start'].minute)
     exam['end_minute'] = int(exam['end'].minute)
 
-    groups = [Groups.Group(g_id=g_id)
+    groups = [Group.get(g_id=g_id)
               for g_id
-              in Groups.active_by_course(course_id)]
+              in Group.active_by_course(course_id)]
     results = {}
     uids = set([])
     totals = {}
@@ -353,7 +352,7 @@ def cadmin_export_csv(course_id, exam_id, group_id):
         flash("Assessment %s does not belong to this course." % int(exam_id))
         return redirect(url_for('cadmin_top', course_id=course_id))
 
-    group = Groups.Group(g_id=group_id)
+    group = Group.get(g_id=group_id)
     output = Spreadsheets.exam_results_as_spreadsheet(course_id, group, exam_id)
     response = make_response(output)
     response.headers.add('Content-Type', "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8")
@@ -502,7 +501,7 @@ def cadmin_editgroup(course_id, group_id):
     """
     group = None
     try:
-        group = Groups.Group(group_id)
+        group = Group.get(group_id)
     except KeyError:
         abort(404)
 
@@ -528,7 +527,7 @@ def cadmin_editgroup_addperson(course_id, group_id):
     """
     group = None
     try:
-        group = Groups.Group(g_id=group_id)
+        group = Group.get(g_id=group_id)
     except KeyError:
         abort(404)
 
@@ -566,7 +565,7 @@ def cadmin_editgroup_member(course_id, group_id):
     """
     group = None
     try:
-        group = Groups.Group(g_id=group_id)
+        group = Group.get(g_id=group_id)
     except KeyError:
         abort(404)
 
@@ -698,7 +697,7 @@ def cadmin_group_detach(course_id, group_id):
     if not course:
         abort(404)
 
-    group = Groups.Group(g_id=group_id)
+    group = Group.get(g_id=group_id)
     Courses.del_group(group_id, course_id)
     flash("Group %s removed from course" % (group.name,))
     return redirect(url_for("cadmin_config", course_id=course_id))
@@ -958,7 +957,7 @@ def cadmin_course_add_group(course_id):
         return redirect(url_for('cadmin_config', course_id=course_id))
 
     Courses.add_group(group_id, course_id)
-    group = Groups.Group(group_id)
+    group = Group.get(group_id)
     flash("Group %s added" % (group.name,))
     return redirect(url_for('cadmin_config', course_id=course_id))
 

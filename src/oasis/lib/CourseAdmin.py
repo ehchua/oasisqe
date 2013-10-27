@@ -7,9 +7,6 @@
 """
 
 import datetime
-import _strptime  # import should prevent thread import blocking issues
-                  # ask Google about:     AttributeError: _strptime
-
 # from oasis import log, INFO, ERROR
 
 from oasis.lib.Permissions import get_course_perms, add_perm, delete_perm
