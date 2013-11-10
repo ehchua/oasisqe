@@ -19,7 +19,15 @@ import OaConfig
 
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_SERIALIZABLE
-import memcache
+
+try:
+    import memcache
+except ImportError:
+    # It'll be slow, but should still work fine
+    memcache = False
+    OaConfig.enableMemcache = False
+
+
 from logging import log, INFO, WARNING, ERROR
 
 try:
