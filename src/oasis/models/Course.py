@@ -129,14 +129,11 @@ class Course(db.Model):
             topics = Topic.query.filter_by(course=self.course_id, archived='1').order_by("position", "topic")
         elif archived == 2:
             topics = Topic.query.filter_by(course=self.course_id).order_by("position", "topic")
-
         return topics
 
-
-    def get_exams(cid, prev_years=False):
+    def get_exams(self, prev_years=False):
         """ Return a list of all assessments in the course."""
-        assert isinstance(cid, int)
-        assert isinstance(prev_years, bool)
+
         if not prev_years:
             now = datetime.datetime.now()
             year = now.year
@@ -145,250 +142,242 @@ class Course(db.Model):
                      WHERE course=%s
                        AND archived='0'
                        AND "end" > '%s-01-01';"""
-            params = (cid, year)
+            params = (self.id, year)
         else:
             sql = """SELECT exam FROM exams WHERE course=%s;"""
-            params = (cid,)
-        ret = run_sql(sql, params)
+            params = (self.id,)
+        ret = db.engine.execute(sql, params)
         if ret:
             exams = [int(row[0]) for row in ret]
             return exams
         return []
 
+    def create_config_demonstration(self, period_id):
+        """ Create any needed groups/configs for a demonstration course
+        """
 
-def _create_config_demonstration(course_id, period_id):
-    """ Create any needed groups/configs for a demonstration course
-    """
+        # An ad-hoc Staff group
+        name = "C_%s_STAFF_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
-    course = get_course(course_id)
-    # An ad-hoc Staff group
-    name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
+        group.name = name
+        group.title = "%s, Staff" % (self.name,)
+        group.gtype = 1  # staff
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-    group.name = name
-    group.title = "%s, Staff" % (course['name'],)
-    group.gtype = 1  # staff
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
+        db.session.add(group)
+        db.session.commit()
 
-    db.session.add(group)
-    db.session.commit()
+        self.add_group(group.id)
 
-    add_group(group.id, course_id)
+        # An Open Registration student group
+        name = "C_%s_OPEN_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
-    # An Open Registration student group
-    name = "C_%s_OPEN_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
+        group.name = name
+        group.title = "%s, Students, Self Registered" % (self.name,)
+        group.gtype = 2  # enrolment
+        group.source = "open"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-    group.name = name
-    group.title = "%s, Students, Self Registered" % (course['name'],)
-    group.gtype = 2  # enrolment
-    group.source = "open"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
+        db.session.add(group)
+        db.session.commit()
 
-    db.session.add(group)
-    db.session.commit()
+        self.add_group(group.id)
 
-    add_group(group.id, course_id)
+        # An ad-hoc student group
+        name = "C_%s_ADHOC_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
-    # An ad-hoc student group
-    name = "C_%s_ADHOC_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
+        group.name = name
+        group.title = "%s, Students" % (self.name,)
+        group.gtype = 2  # student
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
+        db.session.add(group)
+        db.session.commit()
 
-    group.name = name
-    group.title = "%s, Students" % (course['name'],)
-    group.gtype = 2  # student
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
-    db.session.add(group)
-    db.session.commit()
+        self.add_group(group.id)
 
-    add_group(group.id, course_id)
+    def create_config_casual(self, period_id):
+        """ Create any needed groups/configs for a casual course
+        """
+        # An ad-hoc Staff group
+        name = "C_%s_STAFF_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group.get(g_id=0)
 
+        group.name = name
+        group.title = "%s, Staff" % (self.name,)
+        group.gtype = 1  # staff
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-def _create_config_casual(course_id, period_id):
-    """ Create any needed groups/configs for a casual course
-    """
+        db.session.add(group)
+        db.session.commit(group)
 
-    course = get_course(course_id)
-    # An ad-hoc Staff group
-    name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group.get(g_id=0)
+        self.add_group(group.id)
 
-    group.name = name
-    group.title = "%s, Staff" % (course['name'],)
-    group.gtype = 1  # staff
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
+        # An ad-hoc student group
+        name = "C_%s_ADHOC_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
-    db.session.add(group)
-    db.session.commit(group)
+        group.name = name
+        group.title = "%s, Students" % (self.name,)
+        group.gtype = 2  # student
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-    add_group(group.id, course_id)
+        db.session.add(group)
+        db.session.commit(group)
 
-    # An ad-hoc student group
-    name = "C_%s_ADHOC_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
+        self.add_group(group.id)
 
-    group.name = name
-    group.title = "%s, Students" % (course['name'],)
-    group.gtype = 2  # student
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
+    def create_config_standard(self, period_id):
+        """ Create any needed groups/configs for a standard course
+        """
 
-    db.session.add(group)
-    db.session.commit(group)
+        # standard
+        #    Create an adhoc staff group
+        #           COURSE_name_STAFF_period
+        #    Create a student group set to ad-hoc
+        #           COURSE_name_ADHOC_period
+        #    Create a student group set to (unconfigured) feed
+        #           COURSE_name_feed_period
 
-    add_group(group.id, course_id)
+        # An ad-hoc Staff group
+        name = "C_%s_STAFF_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
+        group.name = name
+        group.title = "%s, Staff" % (self.name,)
+        group.gtype = 1  # staff
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-def _create_config_standard(course_id, period_id):
-    """ Create any needed groups/configs for a standard course
-    """
+        db.session.add(group)
+        db.session.commit()
 
-    # standard
-    #    Create an adhoc staff group
-    #           COURSE_name_STAFF_period
-    #    Create a student group set to ad-hoc
-    #           COURSE_name_ADHOC_period
-    #    Create a student group set to (unconfigured) feed
-    #           COURSE_name_feed_period
+        self.add_group(group.id)
 
-    course = get_course(course_id)
-    # An ad-hoc Staff group
-    name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
+        # An ad-hoc student group
+        name = "C_%s_ADHOC_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
-    group.name = name
-    group.title = "%s, Staff" % (course['name'],)
-    group.gtype = 1  # staff
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
+        group.name = name
+        group.title = "%s, Students" % (self.name,)
+        group.gtype = 2  # student
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-    db.session.add(group)
-    db.session.commit()
+        db.session.add(group)
+        db.session.commit()
 
-    add_group(group.id, course_id)
-
-    # An ad-hoc student group
-    name = "C_%s_ADHOC_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
-
-    group.name = name
-    group.title = "%s, Students" % (course['name'],)
-    group.gtype = 2  # student
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
-
-    db.session.add(group)
-    db.session.commit()
-
-    add_group(group.id, course_id)
+        self.add_group(group.id)
 
 
-def _create_config_large(course_id, period_id):
-    """ Create any needed groups/configs for a large course
-    """
+    def create_config_large(self, period_id):
+        """ Create any needed groups/configs for a large course
+        """
 
-    # large
-    #    Create a staff group set to (unconfigured) feed
-    #           COURSE_name_STAFF_feed_period
-    #    Create an adhoc staff group
-    #           COURSE_name_STAFF_period
-    #    Create a student group set to ad-hoc
-    #           COURSE_name_ADHOC_period
-    #    Create a student group set to (unconfigured) feed
-    #           COURSE_name_feed_period
+        # large
+        #    Create a staff group set to (unconfigured) feed
+        #           COURSE_name_STAFF_feed_period
+        #    Create an adhoc staff group
+        #           COURSE_name_STAFF_period
+        #    Create a student group set to ad-hoc
+        #           COURSE_name_ADHOC_period
+        #    Create a student group set to (unconfigured) feed
+        #           COURSE_name_feed_period
 
-    course = get_course(course_id)
-    # An ad-hoc Staff group
-    name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
+        # An ad-hoc Staff group
+        name = "C_%s_STAFF_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
-    group.name = name
-    group.title = "%s, Staff" % (course['name'],)
-    group.gtype = 1  # staff
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
+        group.name = name
+        group.title = "%s, Staff" % (self.name,)
+        group.gtype = 1  # staff
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-    db.session.add(group)
-    db.session.commit()
+        db.session.add(group)
+        db.session.commit()
 
-    add_group(group.id, course_id)
+        self.add_group(group.id)
 
-    # An ad-hoc student group
-    name = "C_%s_STAFF_%s" % (course['name'], period_id)
-    group = Group.get_by_name(name)
-    if not group:
-        group = Group()
+        # An ad-hoc student group
+        name = "C_%s_STAFF_%s" % (self.name, period_id)
+        group = Group.get_by_name(name)
+        if not group:
+            group = Group()
 
-    group.name = name
-    group.title = "%s, Students" % (course['name'],)
-    group.gtype = 2  # student
-    group.source = "adhoc"
-    group.period = period_id
-    group.feed = None
-    group.feedargs = ""
-    group.active = True
+        group.name = name
+        group.title = "%s, Students" % (self.name,)
+        group.gtype = 2  # student
+        group.source = "adhoc"
+        group.period = period_id
+        group.feed = None
+        group.feedargs = ""
+        group.active = True
 
-    db.session.add(group)
-    db.session.commit()
+        db.session.add(group)
+        db.session.commit()
 
-    add_group(group.id, course_id)
+        self.add_group(group.id)
 
 
-def create_config(course_id, coursetemplate, period_id):
-    """ Course is being created. Setup some configuration depending on
-        given values.
-    """
+    def create_config(self, coursetemplate, period_id):
+        """ Course is being created. Setup some configuration depending on
+            given values.
+        """
 
-    # First, course template
-    if coursetemplate == "demo":
-        _create_config_demonstration(course_id, period_id)
-    elif coursetemplate == "casual":
-        _create_config_casual(course_id, period_id)
-    elif coursetemplate == "standard":
-        _create_config_standard(course_id, period_id)
-    elif coursetemplate == "large":
-        _create_config_large(course_id, period_id)
+        # First, course template
+        if coursetemplate == "demo":
+            self.create_config_demonstration(period_id)
+        elif coursetemplate == "casual":
+            self.create_config_casual(period_id)
+        elif coursetemplate == "standard":
+            self.create_config_standard(period_id)
+        elif coursetemplate == "large":
+            self.create_config_large(period_id)
 
