@@ -12,6 +12,7 @@ from logging import log, ERROR
 import datetime
 
 from oasis.models.Group import Group
+from oasis.models.Topic import Topic
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
 from oasis import db
 
@@ -115,104 +116,44 @@ class Course(db.Model):
 
         db.engine.execute("DELETE FROM groupcourses WHERE groupid=%s AND course=%s;", (group_id, course_id))
 
-    def get_topics_all(self, archived=2, numq=True):
+    def topics(self, archived=2, numq=True):
         """ Return a summary of all topics in the course.
             if archived=0, only return non archived courses
             if archived=1, only return archived courses
             if archived=2, return all courses
             if numq is true then include the number of questions in the topic
         """
-    ret = None
-    if archived == 0:
-        ret = run_sql("""SELECT topic, title, position, visibility, archived
-                         FROM topics
-                         WHERE course=%s
-                           AND (archived='0' OR archived IS NULL)
-                         ORDER BY position, topic;""", (course,))
-    elif archived == 1:
-        ret = run_sql("""SELECT topic, title, position, visibility, archived
-                         FROM topics
-                         WHERE course=%s
-                           AND archived='1'
-                         ORDER BY position, topic;""", (course,))
-    elif archived == 2:
-        ret = run_sql("""SELECT topic, title, position, visibility, 0
-                         FROM topics
-                         WHERE course=%s
-                         ORDER BY position, topic;""", (course,))
-    info = {}
-    if ret:
-        count = 0
-        for row in ret:
-            info[count] = {'id': int(row[0]),
-                           'title': row[1],
-                           'position': row[2],
-                           'visibility': row[3],
-                           'archived': row[4]}
-            if info[count]['position'] is None or info[count]['position'] is "None":
-                info[count]['position'] = 0
-            if numq:
-                info[count]['numquestions'] = Topics.get_num_qs(int(row[0]))
-            count += 1
-    else:  # we probably don't have the archived flag in the Db yet
-        ret = run_sql(
-            """SELECT topic, title, position, visibility
-               FROM topics
-               WHERE course=%s
-               ORDER BY position, topic;""", (course,))
-        if ret:
-            count = 0
-            for row in ret:
-                info[count] = {'id': int(row[0]),
-                               'title': row[1],
-                               'position': row[2],
-                               'visibility': row[3]}
-                if info[count]['position'] is None or info[count]['position'] is "None":
-                    info[count]['position'] = 0
-                if numq:
-                    info[count]['numquestions'] = Topics.get_num_qs(int(row[0]))
-                count += 1
-    return info
+        if archived == 0:
+            topics = Topic.query.filter_by(course=self.course_id, archived='0').order_by("position", "topic")
+        elif archived == 1:
+            topics = Topic.query.filter_by(course=self.course_id, archived='1').order_by("position", "topic")
+        elif archived == 2:
+            topics = Topic.query.filter_by(course=self.course_id).order_by("position", "topic")
 
-
-def get_topics(cid):
-    """ Return a list of all topics in the course."""
-    key = "course-%s-topics" % cid
-    obj = MC.get(key)
-    if obj:
-        return obj
-    sql = "SELECT topic FROM topics WHERE course=%s ORDER BY position;"
-    params = (cid,)
-    ret = run_sql(sql, params)
-    if ret:
-        topics = [row[0] for row in ret]
-        MC.set(key, topics)
         return topics
-    MC.set(key, [])
-    return []
 
 
-def get_exams(cid, prev_years=False):
-    """ Return a list of all assessments in the course."""
-    assert isinstance(cid, int)
-    assert isinstance(prev_years, bool)
-    if not prev_years:
-        now = datetime.datetime.now()
-        year = now.year
-        sql = """SELECT exam
-                 FROM exams
-                 WHERE course=%s
-                   AND archived='0'
-                   AND "end" > '%s-01-01';"""
-        params = (cid, year)
-    else:
-        sql = """SELECT exam FROM exams WHERE course=%s;"""
-        params = (cid,)
-    ret = run_sql(sql, params)
-    if ret:
-        exams = [int(row[0]) for row in ret]
-        return exams
-    return []
+    def get_exams(cid, prev_years=False):
+        """ Return a list of all assessments in the course."""
+        assert isinstance(cid, int)
+        assert isinstance(prev_years, bool)
+        if not prev_years:
+            now = datetime.datetime.now()
+            year = now.year
+            sql = """SELECT exam
+                     FROM exams
+                     WHERE course=%s
+                       AND archived='0'
+                       AND "end" > '%s-01-01';"""
+            params = (cid, year)
+        else:
+            sql = """SELECT exam FROM exams WHERE course=%s;"""
+            params = (cid,)
+        ret = run_sql(sql, params)
+        if ret:
+            exams = [int(row[0]) for row in ret]
+            return exams
+        return []
 
 
 def _create_config_demonstration(course_id, period_id):

@@ -29,7 +29,26 @@ class Topic(db.Model):
 #);
 
     topic = Column(Integer, primary_key=True)
-    course = Column(Integer, )
+    course = Column(Integer, ForeignKey() )
+
+    def num_questions(self):
+        """Tell us how many questions are in the given topic."""
+        sql = """SELECT count(topic)
+                FROM questiontopics
+                WHERE topic=%s
+                 AND position > 0;
+                """
+        params = (topic_id,)
+        try:
+            res = run_sql(sql, params)
+            if not res:
+                num = 0
+            else:
+                num = int(res[0][0])
+            return num
+        except LookupError:
+            raise IOError("Database connection failed")
+
 
 
 
