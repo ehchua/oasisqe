@@ -13,13 +13,14 @@ from datetime import datetime
 from flask import render_template, \
     request, redirect, abort, url_for, flash
 
-from oasis.lib import Courses, Courses2, Setup, External, UFeeds
+from oasis.lib import Setup, External
 
 MYPATH = os.path.dirname(__file__)
 from .lib import DB
 from oasis import app, require_perm, db
 from .models.Group import Group
 from .models.Feed import Feed
+from .models.UFeed import UFeed
 from .models.Period import Period
 # from logging import log, INFO
 

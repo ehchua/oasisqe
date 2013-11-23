@@ -22,8 +22,10 @@ import jinja2
 
 from logging import log, INFO, WARN, ERROR
 from oasis.lib.OaExceptions import OaMarkerError
-from . import Courses, Exams
-from oasis.lib import OaConfig, DB, Topics, script_funcs, OqeSmartmarkFuncs
+from . import Exams
+from oasis.lib import OaConfig, DB, script_funcs, OqeSmartmarkFuncs
+from oasis.models.Course import Course
+from oasis.models.Topic import Topic
 
 
 def htmlesc(text):

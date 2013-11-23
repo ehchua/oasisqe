@@ -189,15 +189,18 @@ class FakeMCConn(object):
     def __init__(self, connectstring):
         log(INFO, "Starting dummy memcached interface.")
 
-    def set(self, key, value, expiry=None):
+    @staticmethod
+    def set(key, value, expiry=None):
         """Pretend to store item. """
         return True
 
-    def get(self, key):
+    @staticmethod
+    def get(key):
         """Return nothing. """
         return None
 
-    def delete(self, key):
+    @staticmethod
+    def delete(key):
         """Do nothing."""
         return None
 

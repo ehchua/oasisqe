@@ -12,7 +12,8 @@ from oasis.lib import General
 
 from oasis.lib.Permissions import check_perm
 from oasis.lib.OaExceptions import OaMarkerError
-from . import OaConfig, DB, Pool, Topics
+from . import OaConfig, DB, Pool
+from oasis.models.Topic import Topic
 
 fileCache = Pool.fileCache(OaConfig.cachedir)
 

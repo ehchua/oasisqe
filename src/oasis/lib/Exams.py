@@ -14,7 +14,6 @@ from logging import log, INFO, ERROR
 
 from .DB import run_sql, dbpool, MC
 from .OaTypes import todatetime
-import Courses2
 from .Permissions import check_perm
 import DB, General
 

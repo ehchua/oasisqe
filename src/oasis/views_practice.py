@@ -10,9 +10,11 @@ import os
 
 from flask import render_template, session, request, abort
 from logging import log, ERROR
-from oasis.lib import DB, Practice, Topics, General, Courses2, Setup, Courses
+from oasis.lib import DB, Practice, General, Setup
 MYPATH = os.path.dirname(__file__)
 from oasis.lib.Permissions import check_perm
+from oasis.models.Topic import Topic
+from oasis.models.Course import Course
 
 from oasis import app, authenticated
 
@@ -33,12 +35,12 @@ def practice_choose_topic(course_id):
     """ Present a list of topics for them to choose from the given course """
     user_id = session['user_id']
     try:
-        course = Courses2.get_course(course_id)
+        course = Course.get(course_id)
     except KeyError:
         course = None
         abort(404)
     try:
-        topics = Courses2.get_topics_list(course_id)
+        topics = course.topics()
     except KeyError:
         topics = []
         abort(404)
@@ -47,7 +49,7 @@ def practice_choose_topic(course_id):
     for topic in topics:
         if topic['visibility'] == 2:  # course only
             if not members:
-                members = Courses.get_users(course_id)
+                members = course.get_users()
             if not user_id in members:
                 topics.remove(topic)
     return render_template(

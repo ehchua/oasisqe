@@ -14,10 +14,11 @@ from logging import log, ERROR
 from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
-from oasis.lib import OaConfig, DB, Topics, Permissions, \
-    Exams, Courses, Courses2, Setup, CourseAdmin, General, Assess, \
-    Spreadsheets
+from oasis.lib import OaConfig, DB, Permissions, \
+    Exams, Setup, CourseAdmin, General, Assess, Spreadsheets
 from oasis.models.User import User
+from oasis.models.Topic import Topic
+from oasis.models.Course import Course
 
 MYPATH = os.path.dirname(__file__)
 
@@ -36,7 +37,7 @@ from oasis import app, require_course_perm, require_perm
                      redir="setup_top")
 def cadmin_top(course_id):
     """ Present top level course admin page """
-    course = Courses2.get_course(course_id)
+    course = Course.get(course_id)
     if not course:
         abort(404)
 

@@ -6,7 +6,6 @@
 """ Courses.py
     Handle course related operations.
 """
-from oasis.lib import Topics
 
 from logging import log, ERROR
 import datetime
@@ -80,14 +79,12 @@ class Course(db.Model):
     def get_by_name(name):
         """ Return a course object for the given name, or None
         """
-
         return Course.query.filter_by(name=name).first()
 
     @staticmethod
     def get(course_id):
         """ Return a course object for the given name, or None
         """
-
         return Course.query.filter_by(course=course_id).first()
 
     @staticmethod
@@ -104,19 +101,17 @@ class Course(db.Model):
         db.session.commit()
         return newc
 
-    @staticmethod
-    def add_group(group_id, course_id):
-        """ Add a group to a course."""
+    def add_group(self, group_id):
+        """ Add a group to the course."""
 
-        db.engine.execute("INSERT INTO groupcourses (groupid, course) VALUES (%s, %s);", (group_id, course_id))
+        db.engine.execute("INSERT INTO groupcourses (groupid, course) VALUES (%s, %s);", (group_id, self.id))
 
-    @staticmethod
-    def del_group(group_id, course_id):
+    def del_group(self, group_id):
         """ Remove a group from the course."""
 
-        db.engine.execute("DELETE FROM groupcourses WHERE groupid=%s AND course=%s;", (group_id, course_id))
+        db.engine.execute("DELETE FROM groupcourses WHERE groupid=%s AND course=%s;", (group_id, self.id))
 
-    def topics(self, archived=2, numq=True):
+    def topics(self, archived=2):
         """ Return a summary of all topics in the course.
             if archived=0, only return non archived courses
             if archived=1, only return archived courses
@@ -124,12 +119,10 @@ class Course(db.Model):
             if numq is true then include the number of questions in the topic
         """
         if archived == 0:
-            topics = Topic.query.filter_by(course=self.course_id, archived='0').order_by("position", "topic")
+            return Topic.query.filter_by(course=self.course_id, archived='0').order_by("position", "topic")
         elif archived == 1:
-            topics = Topic.query.filter_by(course=self.course_id, archived='1').order_by("position", "topic")
-        elif archived == 2:
-            topics = Topic.query.filter_by(course=self.course_id).order_by("position", "topic")
-        return topics
+            return Topic.query.filter_by(course=self.course_id, archived='1').order_by("position", "topic")
+        return Topic.query.filter_by(course=self.course_id).order_by("position", "topic")
 
     def get_exams(self, prev_years=False):
         """ Return a list of all assessments in the course."""

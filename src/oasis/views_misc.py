@@ -16,7 +16,9 @@ from flask import render_template, session, \
     send_file, Response
 from logging import log, INFO
 
-from .lib import DB, Topics, Courses2, Attach, QEditor
+from .lib import DB, Attach, QEditor
+from oasis.models.Course import Course
+from oasis.models.Topic import Topic
 
 MYPATH = os.path.dirname(__file__)
 

@@ -6,7 +6,6 @@
 """ Topic.py
     Handle topic related operations.
 """
-import json
 
 from logging import log, ERROR, INFO
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey

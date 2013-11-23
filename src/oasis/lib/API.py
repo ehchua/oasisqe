@@ -9,7 +9,8 @@
     some backend for AJAX stuff.
 """
 
-from oasis.lib import General, Courses
+from oasis.lib import General
+from oasis.models.Course import Course
 
 
 def get_q_list(topic):
