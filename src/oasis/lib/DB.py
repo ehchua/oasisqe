@@ -1055,31 +1055,6 @@ def get_q_stats_class(course, qt_id):
             return stats
 
 
-def set_message(name, message):
-    """Store a message
-    """
-    ret = run_sql("SELECT COUNT(message) FROM messages WHERE name=%s;",
-                  (name,))
-    if ret and len(ret) and int(ret[0][0]) >= 1:
-        run_sql("UPDATE messages SET message=%s WHERE name=%s;",
-                (message, name))
-        log(INFO, "Message %s updated to %s." % (name, message))
-    else:
-        run_sql("INSERT INTO messages (name, message) VALUES (%s, %s);",
-                (name, message))
-        log(INFO, "Message %s inserted as %s." % (name, message))
-
-
-def get_message(name):
-    """Retrieve a message
-    """
-    ret = run_sql("SELECT message FROM messages WHERE name=%s;",
-                  (name,))
-    if not ret:
-        return ""
-    return ret[0][0]
-
-
 def touch_user_exam(exam_id, user_id):
     """ Update the lastchange field on a user exam so other places can tell that
         something changed. This should probably be done any time one of the

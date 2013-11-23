@@ -36,7 +36,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://%s:%s@%s:%s/%s' % (OaConfi
 
 db = SQLAlchemy(app)
 
-from oasis.models import User
+from oasis.models.User import User
+from oasis.models.Message import Message
 
 # Email error messages to admins ?
 if OaConfig.email_admins:
@@ -219,7 +220,7 @@ def index():
         return redirect(url_for("main_top"))
 
     if OaConfig.default == "landing":
-        mesg_login = DB.get_message("loginmotd")
+        mesg_login = Message.text_by_name("loginmotd")
         alt_landing = os.path.join(OaConfig.theme_path, "landing_page.html")
         if os.path.isfile(alt_landing):
             tmpf = open(alt_landing)
@@ -238,7 +239,7 @@ def index():
 def login_local():
     """ Present a login page for people with local OASIS accounts to log in"""
 
-    mesg_login = DB.get_message("loginmotd")
+    mesg_login = Message.text_by_name("loginmotd")
     return render_template("login_screen_local.html", mesg_login=mesg_login)
 
 

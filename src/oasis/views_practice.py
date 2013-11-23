@@ -66,46 +66,36 @@ def practice_choose_topic(course_id):
 def practice_choose_question(topic_id):
     """ Present a list of questions for them to choose from the given topic """
     user_id = session['user_id']
-    try:
-        course_id = Topics.get_course_id(topic_id)
-    except KeyError:
-        course_id = None
-        abort(404)
+    topic = Topic.get(topic_id)
+    course = Course.get(topic.course)
     topics = []
     try:
-        topics = Courses2.get_topics_list(course_id)
+        topics = course.topics()
     except KeyError:
         abort(404)
-    try:
-        course = Courses2.get_course(course_id)
-    except KeyError:
-        course = None
-        abort(404)
-    topictitle = Topics.get_name(topic_id)
-    questions = Practice.get_sorted_questions(course_id, topic_id, user_id)
+    questions = Practice.get_sorted_questions(course.id, topic_id, user_id)
 
-    thistopic = Topics.get_topic(topic_id)
     members = []
-    if thistopic['visibility'] == 2:  # course only
+    if topic.visibility == 2:  # course only
         if not members:
-            members = Courses.get_users(course_id)
+            members = course.get_users()
             if not user_id in members:
                 abort(404)
 
     for topic in topics:
         if topic['visibility'] == 2:  # course only
             if not members:
-                members = Courses.get_users(course_id)
+                members = course.get_users()
             if not user_id in members:
                 topics.remove(topic)
 
     return render_template(
         "practicetopic.html",
-        canpreview=check_perm(user_id, course_id, "questionpreview"),
+        canpreview=check_perm(user_id, course.id, "questionpreview"),
         topics=topics,
         topic_id=topic_id,
         course=course,
-        topictitle=topictitle,
+        topictitle=topic.title,
         questions=questions
     )
 
@@ -117,23 +107,19 @@ def practice_choose_question_stats(topic_id):
         and show some statistics on how they're doing.
     """
     user_id = session['user_id']
+    topic = Topic.get(topic_id)
+    course = topic.course
 
-    course_id = Topics.get_course_id(topic_id)
-    if not course_id:
-        abort(404)
-
-    topics = Courses2.get_topics_list(course_id)
-    course = Courses2.get_course(course_id)
-    topictitle = Topics.get_name(topic_id)
-    questions = Practice.get_sorted_qlist_wstats(course_id, topic_id, user_id)
+    topics = course.topics()
+    questions = Practice.get_sorted_qlist_wstats(course.id, topic_id, user_id)
 
     return render_template(
         "practicetopicstats.html",
-        canpreview=check_perm(user_id, course_id, "questionpreview"),
+        canpreview=check_perm(user_id, course.id, "questionpreview"),
         topics=topics,
         topic_id=topic_id,
         course=course,
-        topictitle=topictitle,
+        topictitle=topic.title,
         questions=questions
     )
 
@@ -144,36 +130,24 @@ def practice_choose_question_stats(topic_id):
 def practice_do_question(topic_id, qt_id):
     """ Show them a question and allow them to fill in some answers """
     user_id = session['user_id']
-    try:
-        course_id = Topics.get_course_id(topic_id)
-    except KeyError:
-        course_id = None
-        abort(404)
-    try:
-        course = Courses2.get_course(course_id)
-    except KeyError:
-        course = None
-        abort(404)
-    topictitle = "UNKNOWN"
-    try:
-        topictitle = Topics.get_name(topic_id)
-    except KeyError:
-        abort(404)
+    topic = Topic.get(topic_id)
+    course = Course.get(topic.course)
+
     try:
         qtemplate = DB.get_qtemplate(qt_id)
     except KeyError:
         qtemplate = None
         abort(404)
-    questions = Practice.get_sorted_questions(course_id, topic_id, user_id)
+    questions = Practice.get_sorted_questions(course.id, topic_id, user_id)
     q_title = qtemplate['title']
     q_pos = DB.get_qtemplate_topic_pos(qt_id, topic_id)
 
-    blocked = Practice.is_q_blocked(user_id, course_id, topic_id, qt_id)
+    blocked = Practice.is_q_blocked(user_id, course.id, topic_id, qt_id)
     if blocked:
         return render_template(
             "practicequestionblocked.html",
             mesg=blocked,
-            topictitle=topictitle,
+            topictitle=topic.title,
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
@@ -190,7 +164,7 @@ def practice_do_question(topic_id, qt_id):
         return render_template(
             "practicequestionerror.html",
             mesg="Error generating question.",
-            topictitle=topictitle,
+            topictitle=topic.title,
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
@@ -203,7 +177,7 @@ def practice_do_question(topic_id, qt_id):
         return render_template(
             "practicequestionerror.html",
             mesg="Error generating question.",
-            topictitle=topictitle,
+            topictitle=topic.title,
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
@@ -218,7 +192,7 @@ def practice_do_question(topic_id, qt_id):
     return render_template(
         "practicedoquestion.html",
         q_body=q_body,
-        topictitle=topictitle,
+        topictitle=topic.title,
         topic_id=topic_id,
         qt_id=qt_id,
         course=course,
@@ -235,33 +209,21 @@ def practice_do_question(topic_id, qt_id):
 def practice_mark_question(topic_id, question_id):
     """ Mark the submitted question answersjust wa """
     user_id = session['user_id']
-
-    course_id = Topics.get_course_id(topic_id)
-    if not course_id:
-        abort(404)
-
-    course = Courses2.get_course(course_id)
-    if not course:
-        abort(404)
-
-    topictitle = "UNKNOWN"
-    try:
-        topictitle = Topics.get_name(topic_id)
-    except KeyError:
-        abort(404)
+    topic = Topic.get(topic_id)
+    course = Course(topic.course)
 
     qt_id = DB.get_q_parent(question_id)
 
     q_title = DB.get_qt_name(qt_id)
-    questions = Practice.get_sorted_questions(course_id, topic_id, user_id)
+    questions = Practice.get_sorted_questions(course.id, topic_id, user_id)
     q_pos = DB.get_qtemplate_topic_pos(qt_id, topic_id)
 
-    blocked = Practice.is_q_blocked(user_id, course_id, topic_id, qt_id)
+    blocked = Practice.is_q_blocked(user_id, course.id, topic_id, qt_id)
     if blocked:
         return render_template(
             "practicequestionblocked.html",
             mesg=blocked,
-            topictitle=topictitle,
+            topictitle=topic.title,
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
@@ -275,7 +237,7 @@ def practice_mark_question(topic_id, question_id):
 
     return render_template(
         "practicemarkquestion.html",
-        topictitle=topictitle,
+        topictitle=topic.title,
         topic_id=topic_id,
         qt_id=qt_id,
         course=course,

@@ -7,7 +7,7 @@
     Handle storing and searching audit messages
 """
 
-from oasis.lib.DB import run_sql
+import oasis
 
 
 def audit(aclass, instigator, obj, module, message):
@@ -16,7 +16,7 @@ def audit(aclass, instigator, obj, module, message):
                                 "object", "module", "longmesg")
             VALUES (NOW(), %s, %s, %s, %s, %s);"""
     params = (aclass, instigator, obj, module, message)
-    run_sql(sql, params)
+    oasis.db.engine.execute(sql, params)
 
 
 def get_records_by_user(uid, start=None, end=None, limit=100, offset=0):
@@ -57,7 +57,7 @@ def get_records_by_user(uid, start=None, end=None, limit=100, offset=0):
                 LIMIT %s OFFSET %s;"""
         params = (uid, uid, limit, offset)
 
-    ret = run_sql(sql, params)
+    ret = oasis.db.engine.execute(sql, params)
     results = []
     if ret:
         for row in ret:

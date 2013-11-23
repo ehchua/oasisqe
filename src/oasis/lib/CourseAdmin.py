@@ -17,12 +17,12 @@ from oasis.models.Course import Course
 from oasis.models.Topic import Topic
 
 
-def do_topic_update(course, request):
+def do_topic_update(course_id, request):
     """Read the submitted form and make relevant changes to Topic information
     """
     categories = []
     topics = []
-
+    course = Course.get(course_id)
     form = request.form
     if form:
         for i in form.keys():
@@ -40,17 +40,18 @@ def do_topic_update(course, request):
                                 }]
         for i in topics:
             if not i['id'] == 0:
-                Topics.set_pos(i['id'], i['position'])
-                Topics.set_name(int(i['id']), i['name'])
-                Topics.set_vis(i['id'], i['visibility'])
-                Courses.incr_version()
+                topic = Topic.get(i['id'])
+                topic.position = i['position']
+                topic.title = i['name']
+                topic.visibility = i['visibility']
+                Course.incr_version()
             else:
                 if not i['name'] == "[Name of new topic]":
-                    Topics.create(course['id'],
+                    Topic.create(course.id,
                                   i['name'],
                                   int(i['visibility']),
                                   i['position'])
-                    Courses.incr_version()
+                    Course.incr_version()
 
         return True
 
@@ -256,11 +257,12 @@ def _get_q_list_sorted(topic):
     return questionlist
 
 
-def get_create_exam_q_list(course):
+def get_create_exam_q_list(course_id):
     """ Return a list of questions that can be used to create an assessment
     """
 
-    topics = Courses.get_topics_all(course, archived=0, numq=False)
+    course = Course.get(course_id)
+    topics = course.topics(archived=0)
     for num, topic in topics.iteritems():
         topic_id = topics[num]['id']
         topics[num]['questions'] = _get_q_list_sorted(topic_id)
