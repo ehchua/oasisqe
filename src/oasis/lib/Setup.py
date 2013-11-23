@@ -68,7 +68,7 @@ def doTopicPageCommands(request, topic_id, user_id):
     if target_cmd:
         qtids = [int(cmd['data']) for cmd in cmdlist if cmd['cmd'] == 'select']
         try:
-            target_topic = int(form.get('target_topic', 0))
+            target_topic = Topic.get(int(form.get('target_topic', 0)))
         except ValueError:
             target_topic = None
 
@@ -76,14 +76,14 @@ def doTopicPageCommands(request, topic_id, user_id):
             if target_topic:
                 for qtid in qtids:
                     qt_title = DB.get_qt_name(qtid)
-                    topic_title = Topics.get_name(target_topic)
+                    topic_title = target_topic.name
                     flash("Moving %s to %s" % (qt_title, topic_title))
                     DB.move_qt_to_topic(qtid, target_topic)
         if target_cmd == 'copy':
             if target_topic:
                 for qtid in qtids:
                     qt_title = DB.get_qt_name(qtid)
-                    topic_title = Topics.get_name(target_topic)
+                    topic_title = target_topic.name
                     flash("Copying %s to %s" % (qt_title, topic_title))
                     newid = DB.copy_qt_all(qtid)
                     DB.add_qt_to_topic(newid, target_topic)
@@ -179,13 +179,13 @@ def get_sorted_courselist(with_stats=False, only_active=True):
          [  ('example101', { coursedict }),  ('sorted302', { coursedict } )  ]
     """
 
-    courses = Courses2.get_course_dict(only_active = only_active)
+    courses = Course.all(only_active=only_active)
 
     inorder = []
-    for cid, course in courses.iteritems():
+    for course in courses:
         if with_stats:
-            course['students'] = Courses.get_users(cid)
-            course['size'] = len(course['students'])
-        inorder.append((course['name'], course))
+            course.students = course.get_users()
+            course.size = len(course.students)
+        inorder.append((course.name, course))
     inorder.sort()
     return inorder

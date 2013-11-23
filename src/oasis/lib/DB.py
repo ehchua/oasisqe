@@ -30,26 +30,12 @@ dbpool = Pool.DbPool(OaConfig.oasisdbconnectstring, 3)
 # Cache stuff on local drives to save our poor database
 fileCache = Pool.fileCache(OaConfig.cachedir)
 
-from Pool import MCPool
-
-# Get a pool of memcache connections to use
-MC = MCPool('127.0.0.1:11211', 3)
-
-
-def run_sql(sql, params=None, quiet=False):
-    """ Execute SQL commands using the dbpool"""
-    conn = dbpool.begin()
-    res = conn.run_sql(sql, params, quiet=quiet)
-    dbpool.commit(conn)
-    return res
-
 
 def set_q_viewtime(question):
     """ Record that the question has been viewed.
         Not a good idea to call multiple times since it's
         nearly always the first time that we want.
     """
-    assert isinstance(question, int)
     run_sql("""UPDATE questions
                SET firstview=NOW()
                WHERE question=%s;""", (question,))
@@ -60,7 +46,6 @@ def set_q_marktime(question):
         Probably best not to call multiple times since
         we usually want the first time.
     """
-    assert isinstance(question, int)
     run_sql("""UPDATE questions
                SET marktime=NOW()
                WHERE question=%s;""", (question,))
@@ -70,7 +55,6 @@ def get_q_viewtime(question):
     """ Return the time that the question was first viewed
         as a human readable string.
     """
-    assert isinstance(question, int)
     ret = run_sql("""SELECT firstview
                      FROM questions
                      WHERE question=%s;""", (question,))
@@ -85,7 +69,6 @@ def get_q_marktime(question):
     """ Return the time that the question was marked
         as a human readable string, or None if it hasn't been.
     """
-    assert isinstance(question, int)
     ret = run_sql("""SELECT marktime
                      FROM questions
                      WHERE question=%s;""", (question,))
@@ -100,9 +83,6 @@ def get_exam_q_by_pos_student(exam, position, student):
     """ Return the question at the given position in the exam for the student.
         Return False if there is no question assigned yet.
     """
-    assert isinstance(exam, int)
-    assert isinstance(position, int)
-    assert isinstance(student, int)
     ret = run_sql("""SELECT question FROM examquestions
                         WHERE student = %s
                         AND position = %s
@@ -114,9 +94,6 @@ def get_exam_q_by_pos_student(exam, position, student):
 
 def get_exam_q_by_qt_student(exam, qt_id, student):
     """ Fetch an assessment question by student"""
-    assert isinstance(exam, int)
-    assert isinstance(qt_id, int)
-    assert isinstance(student, int)
     ret = run_sql("""SELECT question FROM questions
                         WHERE student=%s
                         AND qtemplate=%s
@@ -128,8 +105,6 @@ def get_exam_q_by_qt_student(exam, qt_id, student):
 
 def get_q_by_qt_student(qt_id, student):
     """ Fetch a question by student"""
-    assert isinstance(qt_id, int)
-    assert isinstance(student, int)
     ret = run_sql("""SELECT question FROM questions
                         WHERE student = %s
                         AND qtemplate = %s and status = '1'
@@ -141,7 +116,6 @@ def get_q_by_qt_student(qt_id, student):
 
 def update_q_score(q_id, score):
     """ Set the score of a question."""
-    assert isinstance(q_id, int)
     try:
         sc = float(score)
     except (TypeError, ValueError):
@@ -153,14 +127,11 @@ def update_q_score(q_id, score):
 
 def set_q_status(q_id, status):
     """ Set the status of a question."""
-    assert isinstance(q_id, int)
-    assert isinstance(status, int)
     run_sql("UPDATE questions SET status=%s WHERE question=%s;", (status, q_id))
 
 
 def get_q_version(q_id):
     """ Return the template version this question was generated from """
-    assert isinstance(q_id, int)
     ret = run_sql("SELECT version FROM questions WHERE question=%s;", (q_id,))
     if ret:
         return int(ret[0][0])
@@ -169,7 +140,6 @@ def get_q_version(q_id):
 
 def get_q_variation(q_id):
     """ Return the template variation this question was generated from"""
-    assert isinstance(q_id, int)
     ret = run_sql("SELECT variation FROM questions WHERE question=%s;", (q_id,))
     if ret:
         return int(ret[0][0])
@@ -178,7 +148,6 @@ def get_q_variation(q_id):
 
 def get_q_parent(q_id):
     """ Return the template this question was generated from"""
-    assert isinstance(q_id, int)
     ret = run_sql("SELECT qtemplate FROM questions WHERE question=%s;", (q_id,))
     if ret:
         return int(ret[0][0])
@@ -188,9 +157,6 @@ def get_q_parent(q_id):
 
 def save_guess(q_id, part, value):
     """ Store the guess in the database."""
-    assert isinstance(q_id, int)
-    assert isinstance(part, int)
-    assert isinstance(value, unicode)
     # noinspection PyComparisonWithNone
     if not value is None:  # "" is legit
         run_sql("""INSERT INTO guesses (question, created, part, guess)
@@ -199,7 +165,6 @@ def save_guess(q_id, part, value):
 
 def get_q_guesses(q_id):
     """ Return a dictionary of the recent guesses in a question."""
-    assert isinstance(q_id, int)
     ret = run_sql("""SELECT part, guess
                      FROM guesses
                      WHERE question = %s
@@ -217,8 +182,6 @@ def get_q_guesses_before_time(q_id, lasttime):
     """ Return a dictionary of the recent guesses in a question,
         from before it was marked.
     """
-    assert isinstance(q_id, int)
-    assert isinstance(lasttime, datetime.datetime)
     ret = run_sql("""SELECT part, guess
                      FROM guesses
                      WHERE question=%s
@@ -238,7 +201,6 @@ def get_qt_by_embedid(embed_id):
     """ Find the question template with the given embed_id,
         or raise KeyError if not found.
     """
-    assert isinstance(embed_id, unicode)
     sql = "SELECT qtemplate FROM qtemplates WHERE embed_id=%s LIMIT 1;"
     params = (embed_id,)
     ret = run_sql(sql, params)
@@ -251,8 +213,6 @@ def get_qt_by_embedid(embed_id):
 
 def get_qtemplate(qt_id, version=None):
     """ Return a dictionary with the QTemplate information """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int) or version is None
     if version:
         sql = """SELECT qtemplate, owner, title, description,
                         marker, scoremax, version, status, embed_id
@@ -294,8 +254,6 @@ def get_qtemplate(qt_id, version=None):
 
 def update_qt_embedid(qt_id, embed_id):
     """ Set the QTemplate's embed_id"""
-    assert isinstance(qt_id, int)
-    assert isinstance(embed_id, unicode) or isinstance(embed_id, str)
     if embed_id == "":
         embed_id = None
     sql = "UPDATE qtemplates SET embed_id=%s WHERE qtemplate=%s"
@@ -309,7 +267,6 @@ def incr_qt_version(qt_id):
     """ Increase the version number of the current question template"""
     # FIXME: Not done in a parallel-safe manner. Could find a way to do this
     # in the database. Fairly low risk.
-    assert isinstance(qt_id, int)
     version = int(get_qt_version(qt_id))
     version += 1
     run_sql("""UPDATE qtemplates
@@ -320,7 +277,6 @@ def incr_qt_version(qt_id):
 
 def get_qt_version(qt_id):
     """ Fetch the version of a question template."""
-    assert isinstance(qt_id, int)
     ret = run_sql("""SELECT version
                      FROM qtemplates
                      WHERE qtemplate=%s;""", (qt_id,))
@@ -331,11 +287,7 @@ def get_qt_version(qt_id):
 
 def get_qt_maxscore(qt_id):
     """ Fetch the maximum score of a question template."""
-    assert isinstance(qt_id, int)
     key = "qtemplate-%d-maxscore" % (qt_id,)
-    obj = MC.get(key)
-    if not obj is None:  # 0 or [] or "" could be legit
-        return obj
     ret = run_sql("""SELECT scoremax
                      FROM qtemplates
                      WHERE qtemplate=%s;""", (qt_id,))
@@ -344,14 +296,12 @@ def get_qt_maxscore(qt_id):
             scoremax = float(ret[0][0])
         except (ValueError, TypeError, KeyError):
             scoremax = 0.0
-        MC.set(key, scoremax)
         return scoremax
     log(WARN, "Request for unknown question template %s." % qt_id)
 
 
 def get_qt_marker(qt_id):
     """ Fetch the marker of a question template."""
-    assert isinstance(qt_id, int)
     ret = run_sql("SELECT marker FROM qtemplates WHERE qtemplate=%s;", (qt_id,))
     if ret:
         return int(ret[0][0])
@@ -362,7 +312,6 @@ def get_qt_owner(qt_id):
     """ Fetch the owner of a question template.
         (The last person to make changes to it)
     """
-    assert isinstance(qt_id, int)
     ret = run_sql("SELECT owner FROM qtemplates WHERE qtemplate=%s;", (qt_id,))
     if ret:
         return ret[0][0]
@@ -371,21 +320,14 @@ def get_qt_owner(qt_id):
 
 def get_qt_name(qt_id):
     """ Fetch the name of a question template."""
-    assert isinstance(qt_id, int)
-    key = "qtemplate-%d-name" % qt_id
-    obj = MC.get(key)
-    if not obj is None:
-        return obj
     ret = run_sql("SELECT title FROM qtemplates WHERE qtemplate=%s;", (qt_id,))
     if ret:
-        MC.set(key, ret[0][0], expiry=360)  # 6 minutes
         return ret[0][0]
     log(WARN, "Request for unknown question template %s." % qt_id)
 
 
 def get_qt_embedid(qt_id):
     """ Fetch the embed_id of a question template."""
-    assert isinstance(qt_id, int)
     ret = run_sql("""SELECT embed_id
                      FROM qtemplates
                      WHERE qtemplate=%s;""", (qt_id,))
@@ -401,8 +343,6 @@ def get_qt_atts(qt_id, version=1000000000):
     """ Return a list of (names of) all attachments connected to
         this question template.
     """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     ret = run_sql("SELECT name FROM qtattach WHERE qtemplate = %s "
@@ -417,10 +357,6 @@ def get_qt_atts(qt_id, version=1000000000):
 def get_q_att_mimetype(qt_id, name, variation, version=1000000000):
     """ Return a string containing the mime type of the attachment.
     """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
-    assert isinstance(variation, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     try:
@@ -453,9 +389,6 @@ def get_qt_att_mimetype(qt_id, name, version=1000000000):
     """ Fetch the mime type of a template attachment.
         If version is set to 0, will fetch the newest.
     """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     key = "qtemplateattach/%d/%s/%d/mimetype" % (qt_id, name, version)
@@ -488,10 +421,6 @@ def get_q_att_fname(qt_id, name, variation, version=1000000000):
         The intent is to save time by passing around a filename rather than the
         entire attachment.
     """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
-    assert isinstance(variation, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     key = "questionattach/%d/%s/%d/%d" % (qt_id, name, variation, version)
@@ -517,10 +446,6 @@ def get_q_att_fname(qt_id, name, variation, version=1000000000):
 
 def get_q_att(qt_id, name, variation, version=1000000000):
     """ Fetch an attachment for the question"""
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
-    assert isinstance(variation, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     key = "questionattach/%d/%s/%d/%d" % (qt_id, name, variation, version)
@@ -546,9 +471,6 @@ def get_qt_att_fname(qt_id, name, version=1000000000):
     """ Fetch a filename for the attachment in the question template.
         If version is set to 0, will fetch the newest.
     """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     key = "qtemplateattach/%d/%s/%d" % (qt_id, name, version)
@@ -580,9 +502,6 @@ def get_qt_att(qt_id, name, version=1000000000):
     """ Fetch an attachment for the question template.
         If version is set to 0, will fetch the newest.
     """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     key = "qtemplateattach/%d/%s/%d" % (qt_id, name, version)
@@ -611,8 +530,6 @@ def get_qt_att(qt_id, name, version=1000000000):
 def get_exam_qts_in_pos(exam_id, position):
     """ Return the question templates in the given position in the exam, or 0.
     """
-    assert isinstance(exam_id, int)
-    assert isinstance(position, int)
     ret = run_sql("""SELECT qtemplate
                      FROM examqtemplates
                      WHERE exam=%s
@@ -625,8 +542,6 @@ def get_exam_qts_in_pos(exam_id, position):
 
 def get_qt_exam_pos(exam_id, qt_id):
     """Return the position a given question template holds in the exam"""
-    assert isinstance(exam_id, int)
-    assert isinstance(qt_id, int)
     ret = run_sql("""SELECT position
                      FROM examqtemplates
                      WHERE exam=%s
@@ -638,24 +553,16 @@ def get_qt_exam_pos(exam_id, qt_id):
 
 def get_qtemplate_topic_pos(qt_id, topic_id):
     """ Fetch the position of a question template in a topic. """
-    assert isinstance(topic_id, int)
-    assert isinstance(qt_id, int)
-    key = "topic-%d-qtemplate-%d-position" % (topic_id, qt_id)
-    obj = MC.get(key)
-    if not obj is None:
-        return int(obj)
     ret = run_sql("""SELECT position
                      FROM questiontopics
                      WHERE qtemplate=%s AND topic=%s;""", (qt_id, topic_id))
     if ret:
-        MC.set(key, ret[0][0], 120)  # remember for 2 minutes
         return int(ret[0][0])
     return False
 
 
 def get_qt_max_pos_in_topic(topic_id):
     """ Fetch the maximum position of a question template in a topic."""
-    assert isinstance(topic_id, int)
     res = run_sql("""SELECT MAX(position)
                      FROM questiontopics
                      WHERE topic=%s;""", (topic_id,))
@@ -666,8 +573,6 @@ def get_qt_max_pos_in_topic(topic_id):
 
 def get_qt_variations(qt_id, version=1000000000):
     """ Return all variations of a question template."""
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     ret = {}
@@ -691,9 +596,6 @@ def get_qt_variations(qt_id, version=1000000000):
 
 def get_qt_variation(qt_id, variation, version=1000000000):
     """ Return a specific variation of a question template."""
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
-    assert isinstance(variation, int)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     res = run_sql("""SELECT data
@@ -725,8 +627,6 @@ def get_qt_variation(qt_id, variation, version=1000000000):
 
 def get_qt_num_variations(qt_id, version=1000000000):
     """ Return the number of variations for a question template. """
-    assert isinstance(qt_id, int)
-    assert isinstance(version, int)
     if version == 1000000000:
         version = get_qt_version(qt_id)
     ret = run_sql("""SELECT MAX(variation) FROM qtvariations
@@ -746,12 +646,6 @@ def get_qt_num_variations(qt_id, version=1000000000):
 
 def create_q_att(qt_id, variation, name, mimetype, data, version):
     """ Create a new Question Attachment using given data."""
-    assert isinstance(qt_id, int)
-    assert isinstance(variation, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
-    assert isinstance(mimetype, str) or isinstance(mimetype, unicode)
-    assert isinstance(data, str) or isinstance(data, unicode)
-    assert isinstance(version, int)
     safedata = psycopg2.Binary(data)
     run_sql("""INSERT INTO qattach (qtemplate, variation, mimetype, name, data, version)
                VALUES (%s, %s, %s, %s, %s, %s);""",
@@ -760,13 +654,6 @@ def create_q_att(qt_id, variation, name, mimetype, data, version):
 
 def create_qt_att(qt_id, name, mimetype, data, version):
     """ Create a new Question Template Attachment using given data."""
-    assert isinstance(qt_id, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
-    assert isinstance(mimetype, str) or isinstance(mimetype, unicode)
-    assert isinstance(data, str) or isinstance(data, unicode)
-    assert isinstance(version, int)
-    key = "qtemplateattach/%d/%s/%d" % (qt_id, name, version)
-    MC.delete(key)
     if not data:
         data = ""
     if isinstance(data, unicode):
@@ -780,13 +667,6 @@ def create_qt_att(qt_id, name, mimetype, data, version):
 
 def create_q(qt_id, name, student, status, variation, version, exam):
     """ Add a question (instance) to the database."""
-    assert isinstance(qt_id, int)
-    assert isinstance(name, str) or isinstance(name, unicode)
-    assert isinstance(student, int)
-    assert isinstance(status, int)
-    assert isinstance(variation, int)
-    assert isinstance(version, int)
-    assert isinstance(exam, int)
     conn = dbpool.begin()
     conn.run_sql("""INSERT INTO questions (qtemplate, name, student, status, variation, version, exam)
                VALUES (%s, %s, %s, %s, %s, %s, %s);""",
@@ -803,10 +683,6 @@ def create_q(qt_id, name, student, status, variation, version, exam):
 
 def update_qt_title(qt_id, title):
     """ Update the title of a question template. """
-    assert isinstance(qt_id, int)
-    assert isinstance(title, str) or isinstance(title, unicode)
-    key = "qtemplate-%d-name" % qt_id
-    MC.delete(key)
     sql = "UPDATE qtemplates SET title = %s WHERE qtemplate = %s;"
     params = (title, qt_id)
     run_sql(sql, params)
@@ -816,10 +692,6 @@ def update_qt_owner(qt_id, owner):
     """ Update the owner of a question template.
         Generally we say the owner is the last person to alter the qtemplate.
     """
-    assert isinstance(qt_id, int)
-    assert isinstance(owner, int)
-    key = "qtemplate-%d-owner" % qt_id
-    MC.delete(key)
     sql = "UPDATE qtemplates SET owner = %s WHERE qtemplate = %s;"
     params = (owner, qt_id)
     run_sql(sql, params)
@@ -827,10 +699,6 @@ def update_qt_owner(qt_id, owner):
 
 def update_qt_maxscore(qt_id, scoremax):
     """ Update the maximum score of a question template. """
-    assert isinstance(qt_id, int)
-    assert isinstance(scoremax, float) or scoremax is None
-    key = "qtemplate-%d-maxscore" % qt_id
-    MC.delete(key)
     sql = """UPDATE qtemplates SET scoremax=%s WHERE qtemplate=%s;"""
     params = (scoremax, qt_id)
     run_sql(sql, params)
@@ -838,8 +706,6 @@ def update_qt_maxscore(qt_id, scoremax):
 
 def update_qt_marker(qt_id, marker):
     """ Update the marker of a question template."""
-    assert isinstance(qt_id, int)
-    assert isinstance(marker, int)
     sql = """UPDATE qtemplates
              SET marker=%s
              WHERE qtemplate=%s;"""
@@ -851,9 +717,6 @@ def update_exam_qt_in_pos(exam_id, position, qtlist):
     """ Set the qtemplates at a given position in the exam to match
         the passed list. If we get qtlist = [0], we remove that position.
     """
-    assert isinstance(exam_id, int)
-    assert isinstance(position, int)
-    assert isinstance(qtlist, list)
     # First remove the current set
     run_sql("DELETE FROM examqtemplates "
             "WHERE exam=%s "
@@ -870,16 +733,7 @@ def update_exam_qt_in_pos(exam_id, position, qtlist):
 
 def update_qt_pos(qt_id, topic_id, position):
     """ Update the position a question template holds in a topic."""
-    assert isinstance(qt_id, int)
-    assert isinstance(position, int)
-    assert isinstance(topic_id, int)
     previous = get_qtemplate_topic_pos(qt_id, topic_id)
-    key = "topic-%d-qtemplate-%d-position" % (topic_id, qt_id)
-    MC.delete(key)
-    key = "topic-%d-numquestions" % topic_id
-    MC.delete(key)
-    key = "topic-%d-qtemplates" % topic_id
-    MC.delete(key)
     sql = """UPDATE questiontopics
              SET position=%s
              WHERE topic=%s
@@ -893,49 +747,20 @@ def update_qt_pos(qt_id, topic_id, position):
 
 def move_qt_to_topic(qt_id, topic_id):
     """ Move a question template to a different sub category."""
-    assert isinstance(qt_id, int)
-    assert isinstance(topic_id, int)
-    key = "topic-%d-numquestions" % topic_id
-    MC.delete(key)
-    key = "topic-%d-qtemplates" % topic_id
-    MC.delete(key)
-    key = "topic-%d-qtemplate-%d-position" % (topic_id, qt_id)
-    MC.delete(key)
-
-    sql = "SELECT topic FROM questiontopics WHERE qtemplate=%s"
-    params = (qt_id,)
-    ret = run_sql(sql, params)
-    if ret:
-        for row in ret:
-            fromtopic = int(row[0])
-            key = "topic-%d-numquestions" % fromtopic
-            MC.delete(key)
-            key = "topic-%d-qtemplates" % fromtopic
-            MC.delete(key)
-            key = "topic-%d-qtemplate-%d-position" % (fromtopic, qt_id)
-            MC.delete(key)
     run_sql("""UPDATE questiontopics
          SET topic=%s WHERE qtemplate=%s;""", (topic_id, qt_id))
 
 
 def add_qt_to_topic(qt_id, topic_id, position=0):
     """ Put the question template into the topic."""
-    assert isinstance(qt_id, int)
-    assert isinstance(topic_id, int)
-    assert isinstance(position, int)
     run_sql("INSERT INTO questiontopics (qtemplate, topic, position) "
             "VALUES (%s, %s, %s)", (qt_id, topic_id, position))
-    key = "topic-%d-numquestions" % topic_id
-    MC.delete(key)
-    key = "topic-%d-qtemplates" % topic_id
-    MC.delete(key)
 
 
 def copy_qt_all(qt_id):
     """ Make an identical copy of a question template,
         including all attachments.
     """
-    assert isinstance(qt_id, int)
     newid = copy_qt(qt_id)
     if newid <= 0:
         return 0
@@ -965,7 +790,6 @@ def copy_qt(qt_id):
     """ Make an identical copy of a question template entry.
         Returns the new qtemplate id.
     """
-    assert isinstance(qt_id, int)
     res = run_sql("SELECT owner, title, description, marker, scoremax, status "
                   "FROM qtemplates "
                   "WHERE qtemplate = %s",
@@ -988,9 +812,6 @@ def copy_qt(qt_id):
 
 def add_qt_variation(qt_id, variation, data, version):
     """ Add a variation to the question template. """
-    assert isinstance(qt_id, int)
-    assert isinstance(variation, int)
-    assert isinstance(version, int)
     pick = cPickle.dumps(data)
     safedata = psycopg2.Binary(pick)
     run_sql("INSERT INTO qtvariations (qtemplate, variation, data, version) "
@@ -1000,12 +821,6 @@ def add_qt_variation(qt_id, variation, data, version):
 
 def create_qt(owner, title, desc, marker, scoremax, status):
     """ Create a new Question Template. """
-    assert isinstance(owner, int)
-    assert isinstance(title, str) or isinstance(title, unicode)
-    assert isinstance(desc, str) or isinstance(desc, unicode)
-    assert isinstance(marker, int)
-    assert isinstance(scoremax, float)
-    assert isinstance(status, int)
     conn = dbpool.begin()
     conn.run_sql("INSERT INTO qtemplates (owner, title, description, marker, scoremax, status, version) "
                  "VALUES (%s, %s, %s, %s, %s, %s, 2);",
@@ -1048,16 +863,6 @@ def get_course_exam_all(course_id, prev_years=False):
     """ Return a summary of information about all current exams in the course
         {id, course, name, description, start, duration, end, type}
     """
-    assert isinstance(course_id, int)
-    assert isinstance(prev_years, bool)
-    if prev_years:
-        key = "course-exam-all-%s-prevyears" % course_id
-    else:
-        key = "course-exam-all-%s" % course_id
-    obj = MC.get(key)
-    if obj:
-        return _deserialize_courseexaminfo(obj)
-
     if prev_years:
         sql = """SELECT exam, course, title, "type", "start", "end",
                     description, duration, to_char("start", 'DD Mon'),
@@ -1086,19 +891,12 @@ def get_course_exam_all(course_id, prev_years=False):
                                  'description': row[6], 'duration': row[7],
                                  'startdate': row[8], 'starttime': row[9],
                                  'enddate': row[10], 'endtime': row[11]}
-    # 60 second cache. take the edge off an exam start peak load
-    MC.set(key, _serialize_courseexaminfo(info), 60)
-
     return info
 
 
 def add_exam_q(user, exam, question, position):
     """Record that the student was assigned the given question for assessment.
     """
-    assert isinstance(user, int)
-    assert isinstance(exam, int)
-    assert isinstance(question, int)
-    assert isinstance(position, int)
     sql = """SELECT id FROM examquestions
               WHERE exam = %s
               AND student = %s
@@ -1118,8 +916,6 @@ def get_student_q_practice_num(user_id, qt_id):
     """Return the number of times the given student has practiced the question
        Exclude assessed scores.
     """
-    assert isinstance(user_id, int)
-    assert isinstance(qt_id, int)
     sql = """SELECT
                  COUNT(question)
              FROM
@@ -1148,7 +944,6 @@ def get_student_q_practice_num(user_id, qt_id):
 def secs_to_human(seconds):
     """Convert a number of seconds to a human readable string, eg  "8 days"
     """
-    assert isinstance(seconds, int) or isinstance(seconds, float)
     perday = 86400
     return "%d days ago" % int(seconds / perday)
 
@@ -1157,8 +952,6 @@ def get_prac_stats_user_qt(user_id, qt_id):
     """ Return Data on the scores of individual practices. it is used to
         display Individual Practise Data section
         Restricted by a certain time period which is 30 secs to 2 hours"""
-    assert isinstance(user_id, int)
-    assert isinstance(qt_id, int)
     sql = """SELECT COUNT(question),MAX(score),MIN(score),AVG(score)
              FROM questions WHERE qtemplate = %s AND student = %s;"""
     params = (qt_id, user_id)
@@ -1183,9 +976,6 @@ def get_student_q_practice_stats(user_id, qt_id, num=3):
        New Changes: set up a time period.
        It only shows the stats within 30 secs to 2 hrs.
     """
-    assert isinstance(user_id, int)
-    assert isinstance(qt_id, int)
-    assert isinstance(num, int)
     sql = """SELECT
                  score, question, EXTRACT(epoch FROM (NOW() - marktime))
              FROM questions
@@ -1230,8 +1020,6 @@ def get_student_q_practice_stats(user_id, qt_id, num=3):
 def get_q_stats_class(course, qt_id):
     """Fetch a bunch of statistics about the given question for the class
     """
-    assert isinstance(course, int)
-    assert isinstance(qt_id, int)
     sql = """SELECT COUNT(question),
                     AVG(score),
                     STDDEV(score),
@@ -1270,9 +1058,6 @@ def get_q_stats_class(course, qt_id):
 def set_message(name, message):
     """Store a message
     """
-    assert isinstance(name, str) or isinstance(name, unicode)
-    assert isinstance(message, str) or isinstance(message, unicode)
-
     ret = run_sql("SELECT COUNT(message) FROM messages WHERE name=%s;",
                   (name,))
     if ret and len(ret) and int(ret[0][0]) >= 1:
@@ -1288,8 +1073,6 @@ def set_message(name, message):
 def get_message(name):
     """Retrieve a message
     """
-    assert isinstance(name, str) or isinstance(name, unicode)
-
     ret = run_sql("SELECT message FROM messages WHERE name=%s;",
                   (name,))
     if not ret:
@@ -1304,8 +1087,6 @@ def touch_user_exam(exam_id, user_id):
             userexam fields on that row
             question/guess in the exam changes
     """
-    assert isinstance(exam_id, int)
-    assert isinstance(user_id, int)
     sql = "UPDATE userexams SET lastchange=NOW() WHERE exam=%s AND student=%s;"
     params = (exam_id, user_id)
     run_sql(sql, params)
@@ -1315,7 +1096,6 @@ def get_qt_editor(qt_id):
     """ Return which type of editor the question should use.
         OQE | Raw
     """
-    assert isinstance(qt_id, int)
     etype = "Raw"
     atts = get_qt_atts(qt_id)
     for att in atts:

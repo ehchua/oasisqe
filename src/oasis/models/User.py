@@ -4,7 +4,8 @@
 # http://www.gnu.org/licenses/agpl-3.0.html
 
 from logging import log, INFO, WARN
-import hashlib, bcrypt
+import hashlib
+import bcrypt
 from sqlalchemy import Column, Integer, String, DateTime
 from oasis import db
 from oasis.lib.Util import generate_uuid_readable

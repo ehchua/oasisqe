@@ -12,11 +12,11 @@ import json
 import datetime
 from logging import log, INFO, ERROR
 
-from .DB import run_sql, dbpool, MC
+from .DB import dbpool
 from .OaTypes import todatetime
 from .Permissions import check_perm
 import DB, General
-
+from oasis.models.Course import Course
 
 def save_score(exam_id, student, examtotal):
     """ Store the exam score.
@@ -243,25 +243,16 @@ def get_end_time(exam, user):
 
 def set_end_time(exam, examend):
     """ Set the end time of an assessment. """
-    assert isinstance(exam, int)
-    assert isinstance(examend, datetime.datetime) or isinstance(examend, str) or isinstance(examend, unicode)
-    key = "exams-%d-endepoch" % exam
-    MC.delete(key)
     run_sql("""UPDATE exams SET "end"=%s WHERE exam=%s;""", (examend, exam))
 
 
 def set_start_time(exam, examstart):
     """ Set the start time of an assessment."""
-    assert isinstance(exam, int)
-    assert isinstance(examstart, datetime.datetime) or isinstance(examstart, str) or isinstance(examstart, unicode)
-    key = "exams-%d-startepoch" % exam
-    MC.delete(key)
     run_sql("""UPDATE exams SET "start"=%s WHERE exam=%s;""", (examstart, exam))
 
 
 def get_num_questions(exam_id):
     """ Return the number of questions in the exam."""
-    assert isinstance(exam_id, int)
     ret = run_sql("""SELECT position FROM examqtemplates WHERE exam=%s GROUP BY position;""", (exam_id,))
     if ret:
         return len(ret)
@@ -271,7 +262,6 @@ def get_num_questions(exam_id):
 
 def get_exams_done(user):
     """ Return a list of assessments done by the user."""
-    assert isinstance(user, int)
     ret = run_sql("SELECT exam FROM examquestions WHERE student = %s GROUP BY exam", (user,))
     if not ret:
         return []
@@ -281,9 +271,6 @@ def get_exams_done(user):
 
 def set_submit_time(student, exam, submittime=None):
     """Set the submit time of the exam instance to a given time, or NOW() """
-    assert isinstance(student, int)
-    assert isinstance(exam, int)
-    assert isinstance(submittime, datetime.datetime) or submittime is None
     if submittime:
         run_sql("""UPDATE userexams SET submittime=%s WHERE exam=%s AND student=%s;""", (submittime, exam, student))
     else:
@@ -450,44 +437,33 @@ def get_exam_struct(exam_id, user_id=None, include_qtemplates=False,
     """ Return a dictionary of useful data about the given exam for the user.
         Including stats is a performance hit so don't unless you need them.
     """
-    assert isinstance(exam_id, int)
-    assert isinstance(user_id, int) \
-        or user_id is None
-    assert isinstance(include_qtemplates, bool)
-    assert isinstance(include_stats, bool)
-    key = "exam-%s-struct" % exam_id
-    obj = MC.get(key)
-    if obj:
-        exam = _deserialize_examstruct(obj)
-    else:
-        sql = """SELECT "title", "owner", "type", "start", "end",
-                        "description", "comments", "course", "archived",
-                        "duration", "markstatus", "instant", "code"
-                 FROM "exams" WHERE "exam" = %s LIMIT 1;"""
-        params = (exam_id, )
-        ret = run_sql(sql, params)
-        if not ret:
-            raise KeyError("Exam %s not found." % exam_id)
-        row = ret[0]
-        exam = {'id': exam_id,
-                'title': row[0],
-                'owner': row[1],
-                'type': row[2],
-                'start': row[3],
-                'end': row[4],
-                'instructions': row[5],
-                'comments': row[6],
-                'cid': row[7],
-                'archived': row[8],
-                'duration': row[9],
-                'markstatus': row[10],
-                'instant': row[11],
-                'code': row[12]
-        }
 
-        MC.set(key, _serialize_examstruct(exam),
-               60)  # 60 second cache. to take the edge off exam start peak load
-    course = Courses2.get_course(exam['cid'])
+    sql = """SELECT "title", "owner", "type", "start", "end",
+                    "description", "comments", "course", "archived",
+                    "duration", "markstatus", "instant", "code"
+             FROM "exams" WHERE "exam" = %s LIMIT 1;"""
+    params = (exam_id, )
+    ret = run_sql(sql, params)
+    if not ret:
+        raise KeyError("Exam %s not found." % exam_id)
+    row = ret[0]
+    exam = {'id': exam_id,
+            'title': row[0],
+            'owner': row[1],
+            'type': row[2],
+            'start': row[3],
+            'end': row[4],
+            'instructions': row[5],
+            'comments': row[6],
+            'cid': row[7],
+            'archived': row[8],
+            'duration': row[9],
+            'markstatus': row[10],
+            'instant': row[11],
+            'code': row[12]
+    }
+
+    course = Course.get(exam['cid'])
     exam['future'] = General.is_future(exam['start'])
     exam['past'] = General.is_past(exam['end'])
     exam['soon'] = General.is_soon(exam['start'])

@@ -164,12 +164,12 @@ def render_own_marked_exam(student, exam):
 
 def get_exam_list_sorted(user_id, prev_years=False):
     """ Return a list of exams for the given user. """
-    courses = Courses.get_all()
+    courses = Course.all()
     exams = []
-    for cid in courses:
+    for course in courses:
         try:
             exams += [Exams.get_exam_struct(e, user_id)
-                      for e in Courses.get_exams(cid, prev_years=prev_years)]
+                      for e in course.get_exams(prev_years=prev_years)]
         except KeyError, err:
             log(ERROR,
                 "Failed fetching exam list for user %s: %s" %

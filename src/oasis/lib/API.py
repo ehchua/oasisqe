@@ -41,12 +41,10 @@ def get_q_list(topic):
     return questionlist
 
 
-def exam_available_q_list(course):
+def exam_available_q_list(course_id):
     """ Return a list of questions that can be used to create an assessment
     """
-    topics = Courses.get_topics_all(course, archived=0, numq=False)
-    for num, topic in topics.iteritems():
-        topic_id = topics[num]['id']
-        topics[num]['questions'] = get_q_list(topic_id)
+    course = Course.get(course_id)
+    topics = course.topics(archived=0)
     return topics
 

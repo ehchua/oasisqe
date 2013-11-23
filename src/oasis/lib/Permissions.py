@@ -5,7 +5,7 @@
 
 """ Contains db access functions for users, groups, permissions and courses """
 
-from oasis.lib.DB import run_sql, MC
+import oasis
 
 PERMS = {'sysadmin': 1, 'useradmin': 2,
          'courseadmin': 3, 'coursecoord': 4,
@@ -23,22 +23,17 @@ def check_perm(user_id, group_id, perm):
     if not isinstance(perm, int):  # we have a string name so look it up
         if PERMS.has_key(perm):
             permission = PERMS[perm]
-    key = "permission-%s-super" % user_id
-    obj = MC.get(key)
-    if obj:
-        return True
         # If they're superuser, let em do anything
-    ret = run_sql("""SELECT "id"
+    ret = oasis.db.engine.execute("""SELECT "id"
                      FROM permissions
                      WHERE userid=%s
                        AND permission=1;""",
                   (user_id,))
     if ret:
-        MC.set(key, True)
         return True
         # If we're asking for course -1 it means any course will do.
     if group_id == -1:
-        ret = run_sql("""SELECT "id"
+        ret = oasis.db.engine.execute("""SELECT "id"
                          FROM permissions
                          WHERE userid=%s
                            AND permission=%s;""",
@@ -46,7 +41,7 @@ def check_perm(user_id, group_id, perm):
         if ret:
             return True
         # Do they have the permission explicitly?
-    ret = run_sql("""SELECT "id"
+    ret = oasis.db.engine.execute("""SELECT "id"
                      FROM permissions
                      WHERE course=%s
                        AND userid=%s
@@ -55,7 +50,7 @@ def check_perm(user_id, group_id, perm):
     if ret:
         return True
         # Now check for global override
-    ret = run_sql("""SELECT "id"
+    ret = oasis.db.engine.execute("""SELECT "id"
                      FROM permissions
                      WHERE course=%s
                        AND userid=%s
@@ -78,9 +73,7 @@ def satisfy_perms(uid, group_id, permlist):
 
 def delete_perm(uid, group_id, perm):
     """Remove a permission. """
-    key = "permission-%s-super" % (uid,)
-    MC.delete(key)
-    run_sql("""DELETE FROM permissions
+    oasis.db.engine.execute("""DELETE FROM permissions
                WHERE userid=%s
                  AND course=%s
                  AND permission=%s""",
@@ -89,17 +82,15 @@ def delete_perm(uid, group_id, perm):
 
 def add_perm(uid, course_id, perm):
     """ Assign a permission."""
-    key = "permission-%s-super" % (uid,)
-    MC.delete(key)
-    run_sql("""INSERT INTO permissions (course, userid, permission)
-               VALUES (%s, %s, %s) """, (course_id, uid, perm))
+    oasis.db.engine.execute("""INSERT INTO permissions (course, userid, permission)
+               VALUES (%s, %s, %s); """, (course_id, uid, perm))
 
 
 def get_course_perms(course_id):
     """ Return a list of all users with permissions on the given course.
         Exclude those who get them via superuser.
     """
-    ret = run_sql("""SELECT "id", userid, permission
+    ret = oasis.db.engine.execute("""SELECT "id", userid, permission
                      FROM permissions
                      WHERE course=%s;""",
                   (course_id,))
