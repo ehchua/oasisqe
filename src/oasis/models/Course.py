@@ -10,10 +10,11 @@
 from logging import log, ERROR
 import datetime
 
-from oasis.models.Group import Group
-from oasis.models.Topic import Topic
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
 from oasis import db
+from oasis.models import Group
+from oasis.models import Topic
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
+
 
 # WARNING: name and title are stored in the database as: title, description
 

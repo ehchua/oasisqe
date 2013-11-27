@@ -15,8 +15,9 @@ from logging import log, INFO, ERROR
 from .DB import dbpool
 from .OaTypes import todatetime
 from .Permissions import check_perm
-import DB, General
-from oasis.models.Course import Course
+import DB
+import General
+from oasis.models import Course
 
 def save_score(exam_id, student, examtotal):
     """ Store the exam score.

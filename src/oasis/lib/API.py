@@ -10,7 +10,7 @@
 """
 
 from oasis.lib import General
-from oasis.models.Course import Course
+from oasis.models import Course
 
 
 def get_q_list(topic):

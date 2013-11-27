@@ -13,8 +13,8 @@ from logging import log, ERROR
 from oasis.lib import DB, Practice, General, Setup
 MYPATH = os.path.dirname(__file__)
 from oasis.lib.Permissions import check_perm
-from oasis.models.Topic import Topic
-from oasis.models.Course import Course
+from oasis.models import Topic
+from oasis.models import Course
 
 from oasis import app
 from .lib.Util import authenticated

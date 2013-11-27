@@ -14,11 +14,10 @@ import logging
 from logging import log, INFO, ERROR
 from logging.handlers import SMTPHandler, RotatingFileHandler
 
-from oasis.lib import OaConfig, DB
+from oasis.lib import OaConfig
 from oasis.lib.Audit import audit
 
 from flask.ext.sqlalchemy import SQLAlchemy
-
 
 
 def create_app(config):

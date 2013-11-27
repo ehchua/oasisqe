@@ -16,16 +16,16 @@ from flask import render_template, session, request, redirect, \
 
 from oasis.lib import OaConfig, DB, Permissions, \
     Exams, Setup, CourseAdmin, General, Assess, Spreadsheets
-from oasis.models.User import User
-from oasis.models.Topic import Topic
-from oasis.models.Course import Course
+from oasis.models import User
+from oasis.models import Topic
+from oasis.models import Course
 
 MYPATH = os.path.dirname(__file__)
 
 from oasis.lib.Permissions import satisfy_perms, check_perm
 from oasis.lib.General import date_from_py2js
 from oasis.lib import External
-from oasis.models.Group import Group
+from oasis.models import Group
 
 from oasis import app
 from .lib.Util import require_course_perm, require_perm
@@ -78,7 +78,7 @@ def cadmin_config(course_id):
     coords = [User.get(perm[0]).id
               for perm in Permissions.get_course_perms(course_id)
               if perm[1] == 3]  # course_coord
-    groups = Course.groups()
+    groups = course.groups()
     choosegroups = [group
                     for group in Group.all_groups()
                     if not group.id in groups]
