@@ -27,7 +27,7 @@ class Topic(db.Model):
 #);
 
     topic = Column(Integer, primary_key=True)
-    course = Column(Integer, ForeignKey("courses.id"))
+    course = Column(Integer, ForeignKey("courses.course"))
     title = Column(String(250), nullable=False, default="")
     visibility = Column(Integer, default=1)
     position = Column(Integer, default=0)

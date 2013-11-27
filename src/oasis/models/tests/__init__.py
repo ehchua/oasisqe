@@ -21,17 +21,14 @@ class TestApp(object):
 
         def setUp(self):
 
-            app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tmp/oasis_test.db'
-
-            global db
-
+            app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/oasis_test.db'
             db.create_all()
 
         def tearDown(selfself):
 
             db.session.remove()
+            db.drop_all()
 
         def test_running(self):
 
-            print repr(db)
             assert True
