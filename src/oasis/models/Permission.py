@@ -43,27 +43,27 @@ class Permission(db.Model):
         if group_id == -1:
             ret = db.engine.execute("""SELECT "id"
                              FROM permissions
-                             WHERE userid=%s
-                               AND permission=%s;""",
-                          (user_id, permission))
+                             WHERE userid=:user_id
+                               AND permission=:perm;""",
+                          user_id=user_id, perm=permission)
             if ret:
                 return True
             # Do they have the permission explicitly?
         ret = db.engine.execute("""SELECT "id"
                          FROM permissions
-                         WHERE course=%s
-                           AND userid=%s
-                           AND permission=%s;""",
-                      (group_id, user_id, permission))
+                         WHERE course=:course_id
+                           AND userid=:user_id
+                           AND permission=:perm;""",
+                      course_id=group_id, user_id=user_id, perm=permission)
         if ret:
             return True
             # Now check for global override
         ret = db.engine.execute("""SELECT "id"
                          FROM permissions
-                         WHERE course=%s
-                           AND userid=%s
+                         WHERE course=:course_id
+                           AND userid=:user_id
                            AND permission='0';""",
-                      (group_id, user_id))
+                      course_id=group_id, user_id=user_id)
         if ret:
             return True
         return False
@@ -91,8 +91,8 @@ class Permission(db.Model):
     @staticmethod
     def add_perm(uid, course_id, perm):
         """ Assign a permission."""
-        db.engine.execute("""INSERT INTO permissions (course, userid, permission) VALUES (:course, :uid, :perm);""",
-                                course=course_id, uid=uid, perm=perm)
+        db.insert("permissions", values={'course': course_id, 'userid':uid, 'permission': perm})
+
 
     @staticmethod
     def get_course_perms(course_id):

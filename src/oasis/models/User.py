@@ -83,15 +83,11 @@ class User(db.Model):
             We first try bcrypt, if it fails we try md5 to see if they have
             an old password, and if so, upgrade the stored password to bcrypt.
         """
-        print "passtest %s" % clearpass
         if len(self.passwd) > 40:  # it's not MD5
             hashed = bcrypt.hashpw(clearpass, self.passwd)
             if self.passwd == hashed:
                 # All good, they matched with bcrypt
                 return True
-        print self.passwd
-
-        print hashed
         # Might be an old account, check md5
         hashgen = hashlib.md5()
         hashgen.update(clearpass)

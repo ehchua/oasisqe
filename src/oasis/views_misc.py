@@ -75,8 +75,8 @@ def login_local_submit():
     username = request.form['username']
     password = request.form['password']
 
-    u = User.verify_password(username, password)
-    if not u:
+    u = User.get_by_uname(username)
+    if not u or not u.verify_password(password):
         log(INFO, "Failed Login for %s" % username)
         flash("Incorrect name or password.")
         return redirect(url_for("login_local"))
@@ -472,10 +472,10 @@ def qedit_raw_edit(topic_id, qt_id):
     topic = Topic.get(topic_id)
     course = Course.get(topic.course)
 
-    if not (check_perm(user_id, course.id, "courseadmin")
-            or check_perm(user_id, course.id, "courseadmin")
-            or check_perm(user_id, course.id, "questionedit")
-            or check_perm(user_id, course.id, "questionsource")):
+    if not (Permission.check_perm(user_id, course.id, "courseadmin")
+            or Permission.check_perm(user_id, course.id, "courseadmin")
+            or Permission.check_perm(user_id, course.id, "questionedit")
+            or Permission.check_perm(user_id, course.id, "questionsource")):
         flash("You do not have question editor privilege in this course")
         return redirect(url_for("cadmin_edit_topic",
                                 course_id=course.id, topic_id=topic_id))
@@ -519,10 +519,10 @@ def qedit_raw_save(topic_id, qt_id):
     user_id = session['user_id']
     topic = Topic.get(topic_id)
     course = Course.get(topic.course)
-    if not (check_perm(user_id, course.id, "courseadmin")
-            or check_perm(user_id, course.id, "courseadmin")
-            or check_perm(user_id, course.id, "questionedit")
-            or check_perm(user_id, course.id, "questionsource")):
+    if not (Permission.check_perm(user_id, course.id, "courseadmin")
+            or Permission.check_perm(user_id, course.id, "courseadmin")
+            or Permission.check_perm(user_id, course.id, "questionedit")
+            or Permission.check_perm(user_id, course.id, "questionsource")):
         flash("You do not have question editor privilege in this course")
         return redirect(url_for("cadmin_edit_topic",
                                 course_id=course.id,
