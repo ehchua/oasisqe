@@ -12,9 +12,10 @@ from logging import log, ERROR
 from oasis.lib import DB
 import StringIO
 from oasis.lib import External
-from oasis.models import Course
-from oasis.models import Topic
+from oasis.models.Course import Course
+from oasis.models.Topic import Topic
 from flask import send_file, abort
+
 
 def doTopicPageCommands(request, topic_id, user_id):
     """We've been asked to perform some operations on the Topic page.

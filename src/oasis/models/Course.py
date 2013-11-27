@@ -61,7 +61,7 @@ class Course(db.Model):
         """ Return a list of all courses in the system."""
 
         if only_active:
-            return Course.query.filter_by(active = True)
+            return Course.query.filter_by(active=True)
         return Course.query.order_by("name").all()
 
     @staticmethod

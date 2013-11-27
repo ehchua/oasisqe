@@ -109,3 +109,21 @@ class TestApp(TestCase):
         Permission.add_perm(u.id, 0, 1)  # superuser
 
         self.assertTrue(Permission.check_perm(u.id, 0, 0))
+
+    def test_course_find(self):
+
+        c1 = Course.create("ctest1", "Course 2", 0, 1)
+        c2 = Course.create("ctest2", "Course 2", 0, 1)
+        c3 = Course.create("ctest3", "Course 2", 0, 1)
+        c4 = Course.create("ctest4", "Course 2", 0, 1)
+
+        db.session.add(c1)
+        db.session.add(c2)
+        db.session.add(c3)
+        db.session.add(c4)
+
+        db.session.commit()
+
+        match = list(Course.all())
+        self.assertEqual(len(match), 4)
+        self.assertListEqual(match, [c1,c2,c3,c4])
