@@ -6,6 +6,7 @@
 """ Contains db access functions for users, groups, permissions and courses """
 
 import oasis
+from oasis import db
 
 PERMS = {'sysadmin': 1, 'useradmin': 2,
          'courseadmin': 3, 'coursecoord': 4,

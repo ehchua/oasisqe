@@ -29,7 +29,6 @@ class User(db.Model):
     def __repr__(self):
         return u"<User %s (%s, %s)>" % (self.id, self.uname, self.email)
 
-
     def set_password(self, clearpass):
         """ Updates a users password. """
         hashed = bcrypt.hashpw(clearpass, bcrypt.gensalt())
@@ -79,32 +78,29 @@ class User(db.Model):
         """
         return User.query.filter_by(id=user_id).first()
 
-    @staticmethod
-    def verify_password(uname, clearpass):
-        """ Confirm the password is correct for the given user name.
+    def verify_password(self, clearpass):
+        """ Confirm the password is correct.
             We first try bcrypt, if it fails we try md5 to see if they have
             an old password, and if so, upgrade the stored password to bcrypt.
         """
-        u = User.get_by_uname(uname)
-
-        if not u:
-            return False
-
-        if len(u.passwd) > 40:  # it's not MD5
-            hashed = bcrypt.hashpw(clearpass, u.passwd)
-            if u.passwd == hashed:
+        print "passtest %s" % clearpass
+        if len(self.passwd) > 40:  # it's not MD5
+            hashed = bcrypt.hashpw(clearpass, self.passwd)
+            if self.passwd == hashed:
                 # All good, they matched with bcrypt
-                return u
+                return True
+        print self.passwd
 
+        print hashed
         # Might be an old account, check md5
         hashgen = hashlib.md5()
         hashgen.update(clearpass)
         md5hashed = hashgen.hexdigest()
-        if u.passwd == md5hashed:
+        if self.passwd == md5hashed:
             # Ok, now we need to upgrade them to something more secure
-            u.set_password(clearpass)
-            log(INFO, "Upgrading MD5 password to bcrypt for %s" % u.uname)
-            return u
+            self.set_password(clearpass)
+            log(INFO, "Upgrading MD5 password to bcrypt for %s" % self.uname)
+            return True
         return False
 
     @staticmethod
@@ -163,13 +159,13 @@ class User(db.Model):
         return []
 
     @staticmethod
-    def create(username, passwd, givenname, familyname,
+    def create(uname, passwd, givenname, familyname,
                acctstatus, student_id, email,
                expiry, source, confirmation_code,
                confirmed):
 
         newu = User()
-        newu.uname = username
+        newu.uname = uname
         newu.passwd = passwd
         newu.givenname = givenname
         newu.familyname = familyname
@@ -180,6 +176,4 @@ class User(db.Model):
         newu.source = source
         newu.confirmation_code = confirmation_code
         newu.confirmed = confirmed
-        db.session.add(newu)
-        db.session.commit()
         return newu
