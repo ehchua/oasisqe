@@ -12,7 +12,7 @@ from oasis.lib import General
 
 from oasis.lib.OaExceptions import OaMarkerError
 from . import OaConfig, DB, Pool
-from oasis.models import Topic
+from oasis.models.Topic import Topic
 from oasis.models.Permission import Permission
 
 fileCache = Pool.fileCache(OaConfig.cachedir)
@@ -54,7 +54,7 @@ def get_sorted_questions(course_id, topic_id, user_id=None):
     if questionlist:
         # Filter out the questions without a positive position unless
         # the user has prevew permission.
-        canpreview = check_perm(user_id, course_id, "questionpreview")
+        canpreview = Permission.check_perm(user_id, course_id, "questionpreview")
         if not canpreview:
             questionlist = [question for question in questionlist
                             if question['position'] > 0]
@@ -143,14 +143,14 @@ def is_q_blocked(user_id, course_id, topic_id, qt_id):
         False if they can view it
         True, or a (str) error message indicating why it's blocked.
     """
-    topicvisibility = Topics.get_vis(topic_id)
-    canpreview = check_perm(user_id, course_id, "questionpreview")
+    topic = Topic.get(topic_id)
+    canpreview = Permission.check_perm(user_id, course_id, "questionpreview")
     # They're trying to go directly to a hidden question?
     position = DB.get_qtemplate_topic_pos(qt_id, topic_id)
     if position <= 0 and not canpreview:
         return "Access denied to question."
         # They're trying to go directly to a question in an invisible category?
-    if topicvisibility <= 1 and not canpreview:
+    if topic.visibility <= 1 and not canpreview:
         return "Access denied to question."
     return False
 

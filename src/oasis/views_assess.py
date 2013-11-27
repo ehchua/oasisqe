@@ -20,6 +20,7 @@ from .lib import DB, General, Exams, Assess
 MYPATH = os.path.dirname(__file__)
 
 from .models.Permission import Permission
+from .models.Course import Course
 
 from oasis import app
 from .lib.Util import authenticated
@@ -67,7 +68,7 @@ def assess_unlock(course_id, exam_id):
 
     exam = Exams.get_exam_struct(exam_id, user_id)
 
-    if not check_perm(user_id, course_id, "exampreview"):
+    if not Permission.check_perm(user_id, course_id, "exampreview"):
         if exam['future']:
             flash("That assessment is not yet available.")
             return redirect(url_for("assess_top"))
@@ -97,7 +98,7 @@ def assess_startexam(course_id, exam_id):
     user_id = session['user_id']
     exam = Exams.get_exam_struct(exam_id, user_id)
 
-    if not check_perm(user_id, course_id, "exampreview"):
+    if not Permission.check_perm(user_id, course_id, "exampreview"):
         if exam['future']:
             flash("That assessment is not yet available.")
             return redirect(url_for("assess_top"))
@@ -120,7 +121,7 @@ def assess_startexam(course_id, exam_id):
 
     return render_template(
         "assessstart.html",
-        course=Courses2.get_course(course_id),
+        course=Course.get(course_id),
         exam=exam
     )
 
@@ -193,7 +194,7 @@ def assess_assessmentpage(course_id, exam_id, page):
                                 course_id=course_id,
                                 exam_id=exam_id))
 
-    course = Courses2.get_course(course_id)
+    course = Course.get(course_id)
     if Exams.is_done_by(user_id, exam_id):
         exam['is_done'] = True
         html = General.render_q_html(q_id, readonly=True)
@@ -226,7 +227,7 @@ def assess_presubmit(course_id, exam_id):
     user_id = session['user_id']
 
     exam = Exams.get_exam_struct(exam_id, course_id)
-    course = Courses2.get_course(course_id)
+    course = Course.get(course_id)
     numquestions = Exams.get_num_questions(exam_id)
     qids = []
     questions = []
@@ -285,7 +286,7 @@ def assess_awaitresults(course_id, exam_id):
     """
     user_id = session['user_id']
     exam = Exams.get_exam_struct(exam_id, course_id)
-    course = Courses2.get_course(course_id)
+    course = Course.get(course_id)
     numquestions = Exams.get_num_questions(exam_id)
     qids = []
     questions = []
@@ -314,7 +315,7 @@ def assess_awaitresults(course_id, exam_id):
 def assess_viewmarked(course_id, exam_id):
     """  Show them their marked assessment results """
     user_id = session['user_id']
-    course = Courses2.get_course(course_id)
+    course = Course.get(course_id)
     try:
         exam = Exams.get_exam_struct(exam_id, course_id)
     except KeyError:

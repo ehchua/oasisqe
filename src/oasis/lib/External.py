@@ -15,10 +15,10 @@ import json
 import zipfile
 import shutil
 from StringIO import StringIO
-from ..models import User
-from ..models import Group
-from ..models import Feed
-from ..models import UFeed
+from ..models.User import User
+from ..models.Group import Group
+from ..models.Feed import Feed
+from ..models.UFeed import UFeed
 from oasis import db
 
 
@@ -176,7 +176,7 @@ def users_update_from_feed(upids):
                     family = " ".join(name.split(" ")[1:])
                 except ValueError:
                     family = ""
-                user = User.create(username=upid,
+                user = User.create(uname=upid,
                             passwd='',
                             givenname=given,
                             familyname=family,

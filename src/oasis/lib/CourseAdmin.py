@@ -90,7 +90,7 @@ def save_perms(request, cid, user_id):
         user_id: User setting the permissions
     """
 
-    permlist = get_course_perms(cid)
+    permlist = Permission.get_course_perms(cid)
     perms = {}
     users = {}
     for perm in permlist:
@@ -122,7 +122,7 @@ def save_perms(request, cid, user_id):
             for perm in [2, 5, 10, 14, 11, 8, 9, 15]:
                 if uname in newperms and perm in newperms[uname]:
                     if not perm in perms[uname]:
-                        add_perm(u.id, cid, perm)
+                        Permission.add_perm(u.id, cid, perm)
                         audit(
                             1,
                             user_id,
@@ -132,7 +132,7 @@ def save_perms(request, cid, user_id):
                         )
                 else:
                     if uname in perms and perm in perms[uname]:
-                        delete_perm(u.id, cid, perm)
+                        Permission.delete_perm(u.id, cid, perm)
                         audit(
                             1,
                             user_id,
@@ -147,7 +147,7 @@ def save_perms(request, cid, user_id):
                 # We've added a user
                 for perm in [2, 5, 10, 14, 11, 8, 9, 15]:
                     if perm in newperms[uname]:
-                        add_perm(u.id, cid, perm)
+                        Permission.add_perm(u.id, cid, perm)
                         audit(
                             1,
                             user_id,
@@ -159,7 +159,7 @@ def save_perms(request, cid, user_id):
             newuname = form['adduser']
             new_user = User.get_by_uname(newuname)
             if new_user:
-                add_perm(new_user.id, cid, 10)
+                Permission.add_perm(new_user.id, cid, 10)
                 audit(
                     1,
                     user_id,

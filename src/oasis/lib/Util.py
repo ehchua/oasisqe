@@ -121,7 +121,7 @@ def require_perm(perms, redir="setup_top"):
             else:
                 permlist = perms
 
-            if satisfy_perms(user_id, 0, permlist):
+            if Permission.satisfy_perms(user_id, 0, permlist):
                 return func(*args, **kwargs)
             flash("You do not have permission to do that.")
             return redirect(url_for(redir))
@@ -169,7 +169,7 @@ def require_course_perm(perms, redir=None):
 
             course_id = kwargs['course_id']
 
-            if satisfy_perms(user_id, course_id, permlist):
+            if Permission.satisfy_perms(user_id, course_id, permlist):
                 return func(*args, **kwargs)
             flash("You do not have course permission to do that.")
             if redir:

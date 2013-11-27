@@ -24,8 +24,8 @@ from logging import log, INFO, WARN, ERROR
 from oasis.lib.OaExceptions import OaMarkerError
 from . import Exams
 from oasis.lib import OaConfig, DB, script_funcs, OqeSmartmarkFuncs
-from oasis.models import Course
-from oasis.models import Topic
+from oasis.models.Course import Course
+from oasis.models.Topic import Topic
 
 
 def htmlesc(text):
@@ -45,16 +45,18 @@ def get_topic_list(cid, numq=True):
         },]
     """     # TODO: magic numbers!
     tlist = []
-    topics = Courses.get_topics(int(cid))
+    course = Course.get(cid)
+    topics = course.get_topics()
     for topic in topics:
         if numq:
-            num = Topics.get_num_qs(topic)
+            num = topic.get_num_qs()
         else:
             num = None
         tlist.append({'tid': topic,
-                      'name': Topics.get_name(topic),
+                      'name': topic.name,
                       'num': num,
-                      'visibility': Topics.get_vis(topic)})
+                      'visibility': topic.visibility
+        })
     return tlist
 
 
@@ -68,7 +70,8 @@ def get_q_list(tid, uid=None, numdone=True):
         },]
     """
     qlist = []
-    qtemplates = Topics.get_qts(int(tid))
+    topic = Topic.get(tid)
+    qtemplates = topic.get_qts()
     for qtid in qtemplates:
         if uid and numdone:
             num = DB.get_student_q_practice_num(uid, qtid)

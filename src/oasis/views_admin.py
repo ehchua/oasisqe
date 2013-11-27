@@ -19,10 +19,11 @@ MYPATH = os.path.dirname(__file__)
 from .lib import DB
 from oasis import app, db
 from .lib.Util import require_perm
-from .models import Group
-from .models import Feed
-from .models import UFeed
-from .models import Period
+from .models.Group import Group
+from .models.Feed import Feed
+from .models.UFeed import UFeed
+from .models.Period import Period
+from .models.Course import Course
 # from logging import log, INFO
 
 
@@ -33,7 +34,7 @@ def admin_top():
     db_version = DB.get_db_version()
     return render_template(
         "admintop.html",
-        courses=Setup.get_sorted_courselist(),
+        courses=Course.all(),
         db_version=db_version
     )
 
@@ -69,7 +70,7 @@ def admin_sysstats():
 def admin_userfeeds():
     """ Present menu page of user account feed related options """
 
-    feeds = UFeeds.all_list()
+    feeds = UFeed.all_list()
     return render_template(
         "admin_user_feeds.html",
         feeds=feeds
@@ -266,7 +267,7 @@ def admin_add_userfeed():
 def admin_edit_userfeed(feed_id):
     """ Present page to edit a user feed in the system """
     try:
-        feed = UFeeds.UFeed(f_id=feed_id)
+        feed = UFeed.get(feed_id)
     except KeyError:
         return abort(404)
     try:
@@ -471,7 +472,7 @@ def admin_edit_user_feed_submit(feed_id):
         )
     else:
         try:
-            feed = UFeeds.UFeed(f_id=feed_id)
+            feed = UFeed.get(feed_id)
         except KeyError:
             return abort(404)
 
@@ -588,9 +589,9 @@ def admin_edit_period_submit(p_id):
 def admin_course(course_id):
     """ Present page to administer settings for a given course"""
 
-    course = Courses2.get_course(course_id)
-    course['size'] = len(Courses.get_users(course_id))
-    groups = Courses.get_groups(course_id)  # TODO: this needs to be groups
+    course = Course.get(course_id)
+    course.size = len(course.get_users())
+    groups = course.get_groups()  # TODO: this needs to be groups
     choosegroups = [group
                     for group in Group.enrolment_groups()
                     if not group in groups]
@@ -613,26 +614,26 @@ def admin_course_save(course_id):
         return redirect(url_for("admin_courses"))
 
     changed = False
-    course = Courses2.get_course(course_id)
-    groups = Courses.get_groups(course_id)
+    course = Course.get(course_id)
+    groups = course.get_groups()
 
     for g_id, group in groups.iteritems():
         if form.get('delgroup_%s' % g_id):
             changed = True
             flash("Removing group %s" % group.name, "info")
-            Courses.del_group(int(g_id), course_id)
+            Course.del_group(int(g_id), course_id)
 
     if 'course_name' in form:
         name = form['course_name']
         if not name == course['name']:
             changed = True
-            Courses.set_name(course_id, name)
+            Course.set_name(course_id, name)
 
     if 'course_title' in form:
         title = form['course_title']
         if not title == course['title']:
             changed = True
-            Courses.set_title(course_id, title)
+            Course.set_title(course_id, title)
 
     if 'course_active' in form:
         active = form['course_active']
@@ -642,24 +643,23 @@ def admin_course_save(course_id):
             active = False
         if not (active == course['active']):
             changed = True
-            Courses.set_active(course_id, active)
+            Course.set_active(course_id, active)
 
     addbtn = form.get('group_addbtn')
     if addbtn:
         newgroup = form.get('addgroup', None)
         if newgroup:
-            Courses.add_group(newgroup, course_id)
+            Course.add_group(newgroup, course_id)
             changed = True
             group = Group.get(newgroup)
             flash("Group %s added." % group.name)
 
     if changed:
-        Courses2.reload_if_needed()
         flash("Course changes saved!")
         return redirect(url_for("admin_course", course_id=course_id))
 
-    course = Courses2.get_course(course_id)
-    course['size'] = len(Courses.get_users(course_id))
+    course = Course.get(course_id)
+    course.size = len(Course.get_users(course_id))
     return redirect(url_for("admin_courses"))
 
 

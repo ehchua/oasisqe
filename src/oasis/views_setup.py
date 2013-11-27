@@ -20,8 +20,9 @@ from oasis.lib.Audit import audit, get_records_by_user
 from oasis import app, db
 from .lib.Util import authenticated
 
-from oasis.models import User
+from oasis.models.User import User
 from oasis.models.Permission import Permission
+from oasis.models.Course import Course
 
 @app.route("/setup/top")
 @authenticated
@@ -35,7 +36,7 @@ def setup_top():
 def setup_courses():
     """ Let the user choose a course to administer """
     user_id = session['user_id']
-    is_sysadmin = check_perm(user_id, -1, 'sysadmin')
+    is_sysadmin = Permission.check_perm(user_id, -1, 'sysadmin')
 
     return render_template(
         "setupchoosecourse.html",
@@ -52,7 +53,7 @@ def setup_usercreate():
     """
     user_id = session['user_id']
 
-    if not check_perm(user_id, -1, "useradmin"):
+    if not Permission.check_perm(user_id, -1, "useradmin"):
         flash("You do not have User Administration access.")
         return redirect(url_for('setup_top'))
 
@@ -130,7 +131,7 @@ def setup_usersearch():
     """ Show a page allowing the admin search for users, or create new ones"""
     user_id = session['user_id']
 
-    if not check_perm(user_id, -1, "useradmin"):
+    if not Permission.check_perm(user_id, -1, "useradmin"):
         flash("You do not have User Administration access.")
         return redirect(url_for('setup_top'))
 
@@ -163,7 +164,7 @@ def setup_useraudit(audit_id):
     """ Show all the audit entries for the given user account. """
     user_id = session['user_id']
 
-    if not check_perm(user_id, -1, "useradmin"):
+    if not Permission.check_perm(user_id, -1, "useradmin"):
         flash("You do not have User Administration access.")
         return redirect(url_for('setup_top'))
 
@@ -184,11 +185,11 @@ def setup_usersummary(view_id):
     """ Show an account summary for the given user account. """
     user_id = session['user_id']
 
-    if not check_perm(user_id, -1, "useradmin"):
+    if not Permission.check_perm(user_id, -1, "useradmin"):
         flash("You do not have User Administration access.")
         return redirect(url_for('setup_top'))
 
-    is_sysadmin = check_perm(user_id, -1, 'sysadmin')
+    is_sysadmin = Permission.check_perm(user_id, -1, 'sysadmin')
 
     user = User.get(view_id)
     examids = Exams.get_exams_done(view_id)
@@ -198,7 +199,7 @@ def setup_usersummary(view_id):
         started = General.human_date(exam['start'])
         exam['started'] = started
 
-        exam['viewable'] = satisfy_perms(user.id, exam['cid'], ("viewmarks", ))
+        exam['viewable'] = Permission.satisfy_perms(user.id, exam['cid'], ("viewmarks", ))
 
         exams.append(exam)
     exams.sort(key=lambda x: x['start_epoch'], reverse=True)
@@ -206,9 +207,9 @@ def setup_usersummary(view_id):
     course_ids = user.get_courses()
     courses = []
     for course_id in course_ids:
-        courses.append(Courses2.get_course(course_id))
+        courses.append(Course.get(course_id))
 
-    user_is_admin = check_perm(view_id, 0, 'sysadmin')
+    user_is_admin = Permission.check_perm(view_id, 0, 'sysadmin')
     return render_template(
         'setup_usersummary.html',
         user=user,
@@ -229,7 +230,7 @@ def setup_myprofile():
     course_ids = user.get_courses()
     courses = []
     for course_id in course_ids:
-        courses.append(Courses2.get_course(course_id))
+        courses.append(Course.get(course_id))
     return render_template(
         'setup_myprofile.html',
         user=user,
@@ -254,7 +255,7 @@ def setup_user_make_sysadmin():
     """ Make them a sysadmin"""
     user_id = session['user_id']
 
-    if not check_perm(user_id, 0, 1):
+    if not Permission.check_perm(user_id, 0, 1):
         flash("You do not have User Administration access.")
         return redirect(url_for('setup_top'))
 
@@ -262,7 +263,7 @@ def setup_user_make_sysadmin():
     if not new_user:
         abort(400)
     user = User.get(new_user)
-    add_perm(new_user, 0, 1)
+    Permission.add_perm(new_user, 0, 1)
     flash("%s is now a system admin on OASIS" % user.uname)
     return redirect(url_for("setup_usersearch"))
 
@@ -273,7 +274,7 @@ def setup_user_remove_sysadmin():
     """ Remove sysadmin"""
     user_id = session['user_id']
 
-    if not check_perm(user_id, 0, 1):
+    if not Permission.check_perm(user_id, 0, 1):
         flash("You do not have User Administration access.")
         return redirect(url_for('setup_top'))
 
@@ -281,7 +282,7 @@ def setup_user_remove_sysadmin():
     if not new_user:
         abort(400)
     user = User.get(new_user)
-    delete_perm(new_user, 0, 1)
+    Permission.delete_perm(new_user, 0, 1)
     flash("%s is no longer a system admin on OASIS" % user.uname)
     return redirect(url_for("setup_usersearch"))
 

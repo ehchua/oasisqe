@@ -25,7 +25,7 @@ MYPATH = os.path.dirname(__file__)
 
 from oasis.lib.General import date_from_py2js
 from oasis.lib import External
-from oasis.models import Group
+from oasis.models.Group import Group
 
 from oasis import app
 from .lib.Util import require_course_perm, require_perm
@@ -43,7 +43,7 @@ def cadmin_top(course_id):
         abort(404)
 
     user_id = session['user_id']
-    is_sysadmin = check_perm(user_id, -1, 'sysadmin')
+    is_sysadmin = Permission.check_perm(user_id, -1, 'sysadmin')
 
     topics = course.topics()
     exams = [Exams.get_exam_struct(exam_id, course_id)
@@ -74,9 +74,9 @@ def cadmin_config(course_id):
         abort(404)
 
     user_id = session['user_id']
-    is_sysadmin = check_perm(user_id, -1, 'sysadmin')
+    is_sysadmin = Permission.check_perm(user_id, -1, 'sysadmin')
     coords = [User.get(perm[0]).id
-              for perm in Permissions.get_course_perms(course_id)
+              for perm in Permission.get_course_perms(course_id)
               if perm[1] == 3]  # course_coord
     groups = course.groups()
     choosegroups = [group
@@ -306,7 +306,7 @@ def cadmin_exam_results(course_id, exam_id):
     exam['start_minute'] = int(exam['start'].minute)
     exam['end_minute'] = int(exam['end'].minute)
 
-    groups = [Group.get(g_id=g_id)
+    groups = [Group.get(g_id)
               for g_id
               in Group.active_by_course(course_id)]
     results = {}
@@ -354,7 +354,7 @@ def cadmin_export_csv(course_id, exam_id, group_id):
         flash("Assessment %s does not belong to this course." % int(exam_id))
         return redirect(url_for('cadmin_top', course_id=course_id))
 
-    group = Group.get(g_id=group_id)
+    group = Group.get(group_id)
     output = Spreadsheets.exam_results_as_spreadsheet(course_id, group, exam_id)
     response = make_response(output)
     response.headers.add('Content-Type', "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8")
@@ -616,8 +616,8 @@ def cadmin_assign_coord(course_id):
         if not new_user:
             flash("User '%s' Not Found" % new_uname)
         else:
-            Permissions.add_perm(new_user.id, course_id, 3)  # courseadmin
-            Permissions.add_perm(new_user.id, course_id, 4)  # coursecoord
+            Permission.add_perm(new_user.id, course_id, 3)  # courseadmin
+            Permission.add_perm(new_user.id, course_id, 4)  # coursecoord
             flash("%s can now control the course." % (new_uname,))
 
     return redirect(url_for('cadmin_config', course_id=course_id))
@@ -640,8 +640,8 @@ def cadmin_remove_coord(course_id, coordname):
         if not new_user:
             flash("User '%s' Not Found" % coordname)
         else:
-            Permissions.delete_perm(new_user.id, course_id, 3)  # courseadmin
-            Permissions.delete_perm(new_user.id, course_id, 4)  # coursecoord
+            Permission.delete_perm(new_user.id, course_id, 3)  # courseadmin
+            Permission.delete_perm(new_user.id, course_id, 4)  # coursecoord
             flash("%s can no longer control the course." % (coordname,))
 
     return redirect(url_for('cadmin_config', course_id=course_id))
@@ -775,7 +775,7 @@ def cadmin_edit_topic(course_id, topic_id):
     all_courses = Course.all()
     all_courses = [crse
                    for crse in all_courses
-                   if satisfy_perms(user_id, int(crse.id),
+                   if Permission.satisfy_perms(user_id, int(crse.id),
                                    ("questionedit", "courseadmin",
                                     "sysadmin"))]
     all_courses.sort(lambda f, s: cmp(f['name'], s['name']))
@@ -841,7 +841,7 @@ def cadmin_view_topic(course_id, topic_id):
 
     all_courses = Course.all()
     all_courses = [course for course in all_courses
-                   if satisfy_perms(user_id, course.id,
+                   if Permission.satisfy_perms(user_id, course.id,
                                    ("questionedit", "courseadmin",
                                     "sysadmin"))]
     all_courses.sort(lambda f, s: cmp(f['name'], s['name']))
@@ -900,7 +900,7 @@ def cadmin_permissions(course_id):
     """ Present a page for them to assign permissions to the course"""
     course = Course.get(course_id)
 
-    permlist = Permissions.get_course_perms(course_id)
+    permlist = Permission.get_course_perms(course_id)
     perms = {}
     for uid, pid in permlist:  # (uid, permission)
         if not uid in perms:

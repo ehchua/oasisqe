@@ -9,7 +9,7 @@
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from oasis import db
-from oasis.models import Period
+from oasis.models.Period import Period
 
 
 class GroupTypes(db.Model):

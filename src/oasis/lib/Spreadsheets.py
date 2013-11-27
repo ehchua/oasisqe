@@ -6,8 +6,8 @@
 from oasis.lib import Exams
 from openpyxl.writer.excel import save_virtual_workbook
 from openpyxl.workbook import Workbook
-from oasis.models import User
-from oasis.models import Course
+from oasis.models.User import User
+from oasis.models.Course import Course
 
 
 def exam_results_as_spreadsheet(course_id, group, exam_id):
