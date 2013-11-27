@@ -14,15 +14,15 @@ from logging import log, ERROR
 from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
-from oasis.lib import OaConfig, DB, Permissions, \
+from oasis.lib import OaConfig, DB, \
     Exams, Setup, CourseAdmin, General, Assess, Spreadsheets
-from oasis.models import User
-from oasis.models import Topic
-from oasis.models import Course
+from oasis.models.User import User
+from oasis.models.Topic import Topic
+from oasis.models.Course import Course
+from oasis.models.Permission import Permission
 
 MYPATH = os.path.dirname(__file__)
 
-from oasis.lib.Permissions import satisfy_perms, check_perm
 from oasis.lib.General import date_from_py2js
 from oasis.lib import External
 from oasis.models import Group

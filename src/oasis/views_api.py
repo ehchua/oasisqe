@@ -13,11 +13,11 @@ import datetime
 from flask import session, abort, jsonify, request
 # from logging import log, ERROR, INFO
 from oasis.lib import Exams, API, Stats
-from oasis.models.User import User
+from .models.User import User
 
 MYPATH = os.path.dirname(__file__)
 
-from oasis.lib.Permissions import satisfy_perms
+from .models.Permission import Permission
 from oasis import app
 from .lib.Util import authenticated, require_perm
 

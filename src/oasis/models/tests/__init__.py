@@ -3,7 +3,6 @@
 
 from unittest import TestCase
 import os
-from oasis.lib import Permissions
 
 from oasis import app, db
 
@@ -15,6 +14,7 @@ from oasis.models.Message import Message
 from oasis.models.Period import Period
 from oasis.models.Topic import Topic
 from oasis.models.UFeed import UFeed
+from oasis.models.Permission import Permission
 
 
 class TestApp(TestCase):
@@ -106,6 +106,6 @@ class TestApp(TestCase):
             confirmation_code='',
             confirmed=True)
 
-       # Permissions.add_perm(u.id, 0, 1)  # superuser
+        Permission.add_perm(u.id, 0, 1)  # superuser
 
-       # self.assertTrue(Permissions.check_perm(u.id, 0, 0))
+        self.assertTrue(Permission.check_perm(u.id, 0, 0))

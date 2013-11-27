@@ -10,10 +10,10 @@ import re
 from logging import log, WARN
 from oasis.lib import General
 
-from oasis.lib.Permissions import check_perm
 from oasis.lib.OaExceptions import OaMarkerError
 from . import OaConfig, DB, Pool
 from oasis.models import Topic
+from oasis.models.Permission import Permission
 
 fileCache = Pool.fileCache(OaConfig.cachedir)
 

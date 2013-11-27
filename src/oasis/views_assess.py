@@ -19,7 +19,7 @@ from .lib import DB, General, Exams, Assess
 
 MYPATH = os.path.dirname(__file__)
 
-from .lib.Permissions import check_perm
+from .models.Permission import Permission
 
 from oasis import app
 from .lib.Util import authenticated

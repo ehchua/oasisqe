@@ -5,8 +5,8 @@
 
 """ Contains db access functions for users, groups, permissions and courses """
 
-import oasis
 from oasis import db
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
 
 PERMS = {'sysadmin': 1, 'useradmin': 2,
          'courseadmin': 3, 'coursecoord': 4,
@@ -18,86 +18,94 @@ PERMS = {'sysadmin': 1, 'useradmin': 2,
          'syscourses': 19, 'surveyresults': 20}
 
 
-def check_perm(user_id, group_id, perm):
-    """ Check to see if the user has the permission on the given course. """
-    permission = 0
-    if not isinstance(perm, int):  # we have a string name so look it up
-        if PERMS.has_key(perm):
-            permission = PERMS[perm]
-        # If they're superuser, let em do anything
-    ret = oasis.db.engine.execute("""SELECT "id"
-                     FROM permissions
-                     WHERE userid=%s
-                       AND permission=1;""",
-                  (user_id,))
-    if ret:
-        return True
-        # If we're asking for course -1 it means any course will do.
-    if group_id == -1:
-        ret = oasis.db.engine.execute("""SELECT "id"
+class Permission(db.Model):
+    __tablename__ = "permissions"
+    id = Column(Integer, primary_key=True)
+    userid = Column(Integer, ForeignKey("users.id"))
+    permission = Column(Integer)
+    course = Column(Integer, ForeignKey("courses.course"))
+
+    @staticmethod
+    def check_perm(user_id, group_id, perm):
+        """ Check to see if the user has the permission on the given course. """
+        permission = 0
+        if not isinstance(perm, int):  # we have a string name so look it up
+            if PERMS.has_key(perm):
+                permission = PERMS[perm]
+            # If they're superuser, let em do anything
+        ret = db.engine.execute("""SELECT id
                          FROM permissions
-                         WHERE userid=%s
-                           AND permission=%s;""",
-                      (user_id, permission))
+                         WHERE userid=:user_id
+                           AND permission=1;""", user_id=user_id)
         if ret:
             return True
-        # Do they have the permission explicitly?
-    ret = oasis.db.engine.execute("""SELECT "id"
-                     FROM permissions
-                     WHERE course=%s
-                       AND userid=%s
-                       AND permission=%s;""",
-                  (group_id, user_id, permission))
-    if ret:
-        return True
-        # Now check for global override
-    ret = oasis.db.engine.execute("""SELECT "id"
-                     FROM permissions
-                     WHERE course=%s
-                       AND userid=%s
-                       AND permission='0';""",
-                  (group_id, user_id))
-    if ret:
-        return True
-    return False
-
-
-def satisfy_perms(uid, group_id, permlist):
-    """ Does the user have one or more of the permissions in permlist,
-        on the given group?
-    """
-    for perm in permlist:
-        if check_perm(uid, group_id, perm):
+            # If we're asking for course -1 it means any course will do.
+        if group_id == -1:
+            ret = db.engine.execute("""SELECT "id"
+                             FROM permissions
+                             WHERE userid=%s
+                               AND permission=%s;""",
+                          (user_id, permission))
+            if ret:
+                return True
+            # Do they have the permission explicitly?
+        ret = db.engine.execute("""SELECT "id"
+                         FROM permissions
+                         WHERE course=%s
+                           AND userid=%s
+                           AND permission=%s;""",
+                      (group_id, user_id, permission))
+        if ret:
             return True
-    return False
+            # Now check for global override
+        ret = db.engine.execute("""SELECT "id"
+                         FROM permissions
+                         WHERE course=%s
+                           AND userid=%s
+                           AND permission='0';""",
+                      (group_id, user_id))
+        if ret:
+            return True
+        return False
 
 
-def delete_perm(uid, group_id, perm):
-    """Remove a permission. """
-    oasis.db.engine.execute("""DELETE FROM permissions
-               WHERE userid=%s
-                 AND course=%s
-                 AND permission=%s""",
-            (uid, group_id, perm))
+    @staticmethod
+    def satisfy_perms(uid, group_id, permlist):
+        """ Does the user have one or more of the permissions in permlist,
+            on the given group?
+        """
+        for perm in permlist:
+            if Permission.check_perm(uid, group_id, perm):
+                return True
+        return False
 
+    @staticmethod
+    def delete_perm(uid, group_id, perm):
+        """Remove a permission. """
+        db.engine.execute("""DELETE FROM permissions
+                   WHERE userid=%s
+                     AND course=%s
+                     AND permission=%s""",
+                (uid, group_id, perm))
 
-def add_perm(uid, course_id, perm):
-    """ Assign a permission."""
-    oasis.db.engine.execute("""INSERT INTO permissions (course, userid, permission) VALUES (:course, :uid, :perm);""",
-                            course=course_id, uid=uid, perm=perm)
+    @staticmethod
+    def add_perm(uid, course_id, perm):
+        """ Assign a permission."""
+        db.engine.execute("""INSERT INTO permissions (course, userid, permission) VALUES (:course, :uid, :perm);""",
+                                course=course_id, uid=uid, perm=perm)
 
-
-def get_course_perms(course_id):
-    """ Return a list of all users with permissions on the given course.
-        Exclude those who get them via superuser.
-    """
-    ret = oasis.db.engine.execute("""SELECT id, userid, permission
-                     FROM permissions
-                     WHERE course=%s;""",
-                  (course_id,))
-    if not ret:
-        return []
-    res = [(int(perm[1]), int(perm[2])) for perm in ret if
-           perm[2] in [2, 3, 4, 5, 10, 14, 11, 17, 16, 8, 9, 15]]
-    # TODO: Magic numbers! get rid of them!
-    return res
+    @staticmethod
+    def get_course_perms(course_id):
+        """ Return a list of all users with permissions on the given course.
+            Exclude those who get them via superuser.
+        """
+        ret = db.engine.execute("""SELECT id, userid, permission
+                         FROM permissions
+                         WHERE course=%s;""",
+                      (course_id,))
+        if not ret:
+            return []
+        res = [(int(perm[1]), int(perm[2])) for perm in ret if
+               perm[2] in [2, 3, 4, 5, 10, 14, 11, 17, 16, 8, 9, 15]]
+        # TODO: Magic numbers! get rid of them!
+        return res

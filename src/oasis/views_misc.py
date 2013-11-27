@@ -23,10 +23,12 @@ MYPATH = os.path.dirname(__file__)
 
 from oasis import app, db
 from .lib.Audit import audit
-from .lib.Permissions import check_perm
+from .models.Permission import Permission
 from .lib.Util import authenticated, send_email
-from .models import User, Message, Topic, Course
-
+from .models.User import User
+from .models.Message import Message
+from .models.Topic import Topic
+from .models.Course import Course
 
 
 @app.route("/")

@@ -13,7 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask import session, redirect, url_for, request, flash
 import datetime
-from .Permissions import satisfy_perms
+from oasis.models.Permission import Permission
 import oasis
 from . import OaConfig
 

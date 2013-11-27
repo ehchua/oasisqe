@@ -16,12 +16,12 @@ from oasis.lib import General, Exams, Setup
 MYPATH = os.path.dirname(__file__)
 
 from oasis.lib.Audit import audit, get_records_by_user
-from oasis.lib.Permissions import check_perm, satisfy_perms, add_perm, delete_perm
 
 from oasis import app, db
 from .lib.Util import authenticated
 
 from oasis.models import User
+from oasis.models.Permission import Permission
 
 @app.route("/setup/top")
 @authenticated

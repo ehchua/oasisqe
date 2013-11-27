@@ -9,12 +9,12 @@
 import datetime
 # from oasis import log, INFO, ERROR
 
-from oasis.lib.Permissions import get_course_perms, add_perm, delete_perm
+from oasis.models.Permission import Permission
 from oasis.lib.Audit import audit
 from oasis.lib import DB, General, Exams
-from oasis.models import User
-from oasis.models import Course
-from oasis.models import Topic
+from oasis.models.User import User
+from oasis.models.Course import Course
+from oasis.models.Topic import Topic
 
 
 def do_topic_update(course_id, request):
