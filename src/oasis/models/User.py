@@ -29,6 +29,7 @@ class User(db.Model):
     def __repr__(self):
         return u"<User %s (%s, %s)>" % (self.id, self.uname, self.email)
 
+
     def set_password(self, clearpass):
         """ Updates a users password. """
         hashed = bcrypt.hashpw(clearpass, bcrypt.gensalt())
@@ -160,3 +161,25 @@ class User(db.Model):
         if res:
             return [int(row[0]) for row in res.fetchall()]
         return []
+
+    @staticmethod
+    def create(username, passwd, givenname, familyname,
+               acctstatus, student_id, email,
+               expiry, source, confirmation_code,
+               confirmed):
+
+        newu = User()
+        newu.uname = username
+        newu.passwd = passwd
+        newu.givenname = givenname
+        newu.familyname = familyname
+        newu.acctstatus = acctstatus
+        newu.student_id = student_id
+        newu.email = email
+        newu.expiry = expiry
+        newu.source = source
+        newu.confirmation_code = confirmation_code
+        newu.confirmed = confirmed
+        db.session.add(newu)
+        db.session.commit()
+        return newu
