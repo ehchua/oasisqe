@@ -34,36 +34,19 @@ class Permission(db.Model):
                 permission = PERMS[perm]
 
         # If they're superuser, let em do anything
-        ret = Permission.query.filter_by(userid=user_id, permission=1)
-        if ret:
+        if Permission.query.filter_by(userid=user_id, permission=1):
             return True
 
-            # If we're asking for course -1 it means any course will do.
-        if group_id == -1:
-            ret = db.engine.execute("""SELECT "id"
-                             FROM permissions
-                             WHERE userid=:user_id
-                               AND permission=:perm;""",
-                          user_id=user_id, perm=permission)
-            if ret:
-                return True
-            # Do they have the permission explicitly?
-        ret = db.engine.execute("""SELECT "id"
-                         FROM permissions
-                         WHERE course=:course_id
-                           AND userid=:user_id
-                           AND permission=:perm;""",
-                      course_id=group_id, user_id=user_id, perm=permission)
-        if ret:
+        # If we're asking for course -1 it means any course will do.
+        if group_id == -1 and Permission.query.filter_by(userid=user_id, permission=permission):
             return True
-            # Now check for global override
-        ret = db.engine.execute("""SELECT "id"
-                         FROM permissions
-                         WHERE course=:course_id
-                           AND userid=:user_id
-                           AND permission='0';""",
-                      course_id=group_id, user_id=user_id)
-        if ret:
+
+        # Do they have the permission explicitly?
+        if Permission.query.filter_by(userid=user_id, permission=permission, course_id=group_id):
+            return True
+
+        # Now check for global override
+        if Permission.query.filter_by(userid=user_id, permission=0, course_id=group_id):
             return True
         return False
 
@@ -90,7 +73,7 @@ class Permission(db.Model):
     @staticmethod
     def add_perm(uid, course_id, perm):
         """ Assign a permission."""
-        db.insert("permissions", values={'course': course_id, 'userid':uid, 'permission': perm})
+        db.insert("permissions", values={'course': course_id, 'userid': uid, 'permission': perm})
 
 
     @staticmethod
