@@ -39,7 +39,7 @@ class Course(db.Model):
     name = Column("title", String(128), unique=True)
     title = Column("description", Text)
     owner = Column(Integer, ForeignKey('users.id'))
-    active = Column(Integer, default=1)
+    active = Column(Boolean, default=True)
     type = Column(Integer)
     practice_visibility = Column(String(50), default="all")
     assess_visibility = Column(String(50), default="enrol")
@@ -61,8 +61,8 @@ class Course(db.Model):
         """ Return a list of all courses in the system."""
 
         if only_active:
-            return Course.query.filter_by(active=True)
-        return Course.query.order_by("name").all()
+            return Course.query.order_by("title").filter_by(active=True)
+        return Course.query.order_by("title").all()
 
     @staticmethod
     def all_dict():

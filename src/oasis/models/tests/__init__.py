@@ -113,9 +113,13 @@ class TestApp(TestCase):
     def test_course_find(self):
 
         c1 = Course.create("ctest1", "Course 2", 0, 1)
+        c1.active = True
         c2 = Course.create("ctest2", "Course 2", 0, 1)
+        c2.active = False
         c3 = Course.create("ctest3", "Course 2", 0, 1)
+        c3.active = True
         c4 = Course.create("ctest4", "Course 2", 0, 1)
+        c4.active = False
 
         db.session.add(c1)
         db.session.add(c2)
@@ -124,6 +128,10 @@ class TestApp(TestCase):
 
         db.session.commit()
 
-        match = list(Course.all())
+        match = list(Course.all(only_active=False))
         self.assertEqual(len(match), 4)
         self.assertListEqual(match, [c1,c2,c3,c4])
+
+        active = list(Course.all(only_active=True))
+        self.assertEqual(len(active), 2)
+        self.assertListEqual(active, [c1,c3])
