@@ -6,9 +6,9 @@
       <br/>
       <ul class="nav nav-list">
         <li class='nav-header'>Course</li>
-        {% for name, course in courses %}
+        {% for course in courses %}
           <li>
-            <a name='course_{{ courses.id }}'
+            <a name='course_{{ course.id }}'
                href='{{ cf.url }}practice/coursequestions/{{ course.id }}'>{{ course.name }} </a>
           </li>
 

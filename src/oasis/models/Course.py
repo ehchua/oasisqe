@@ -11,8 +11,8 @@ from logging import log, ERROR
 import datetime
 
 from oasis import db
-from oasis.models import Group
-from oasis.models import Topic
+from oasis.models.Group import Group
+from oasis.models.Topic import Topic
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
 
 
@@ -35,7 +35,7 @@ class Course(db.Model):
 #    "assess_visibility" character varying DEFAULT 'enrol'::character varying
 #);
 
-    course = Column(Integer, primary_key=True)
+    id = Column("course", Integer, primary_key=True)
     name = Column("title", String(128), unique=True)
     title = Column("description", Text)
     owner = Column(Integer, ForeignKey('users.id'))
@@ -47,7 +47,7 @@ class Course(db.Model):
     def get_users(self):
         """ Return a list of users in the course"""
         allusers = []
-        for g_id, group in Group.active_by_course(self.id).iteritems():
+        for group in Group.active_by_course(self.id):
             allusers.append(group.members())
         return allusers
 
@@ -61,7 +61,7 @@ class Course(db.Model):
         """ Return a list of all courses in the system."""
 
         if only_active:
-            return Course.query.order_by("title").filter_by(active=True)
+            return Course.query.order_by("title").filter_by(active=1)
         return Course.query.order_by("title").all()
 
     @staticmethod
@@ -86,7 +86,7 @@ class Course(db.Model):
     def get(course_id):
         """ Return a course object for the given name, or None
         """
-        return Course.query.filter_by(course=course_id).first()
+        return Course.query.filter_by(id=course_id).first()
 
     @staticmethod
     def create(name, title, owner, coursetype):
@@ -120,10 +120,10 @@ class Course(db.Model):
             if numq is true then include the number of questions in the topic
         """
         if archived == 0:
-            return Topic.query.filter_by(course=self.course_id, archived='0').order_by("position", "topic")
+            return Topic.query.filter_by(course=self.id, archived='0').order_by("position", "topic")
         elif archived == 1:
-            return Topic.query.filter_by(course=self.course_id, archived='1').order_by("position", "topic")
-        return Topic.query.filter_by(course=self.course_id).order_by("position", "topic")
+            return Topic.query.filter_by(course=self.id, archived='1').order_by("position", "topic")
+        return Topic.query.filter_by(course=self.id).order_by("position", "topic")
 
     def get_exams(self, prev_years=False):
         """ Return a list of all assessments in the course."""

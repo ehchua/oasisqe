@@ -32,13 +32,12 @@ class Permission(db.Model):
         if not isinstance(perm, int):  # we have a string name so look it up
             if PERMS.has_key(perm):
                 permission = PERMS[perm]
-            # If they're superuser, let em do anything
-        ret = db.engine.execute("""SELECT id
-                         FROM permissions
-                         WHERE userid=:user_id
-                           AND permission=1;""", user_id=user_id)
+
+        # If they're superuser, let em do anything
+        ret = Permission.query.filter_by(userid=user_id, permission=1)
         if ret:
             return True
+
             # If we're asking for course -1 it means any course will do.
         if group_id == -1:
             ret = db.engine.execute("""SELECT "id"

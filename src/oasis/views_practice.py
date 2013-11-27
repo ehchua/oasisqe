@@ -12,9 +12,9 @@ from flask import render_template, session, request, abort
 from logging import log, ERROR
 from oasis.lib import DB, Practice, General, Setup
 MYPATH = os.path.dirname(__file__)
-from oasis.models import Permission
-from oasis.models import Topic
-from oasis.models import Course
+from oasis.models.Permission import Permission
+from oasis.models.Topic import Topic
+from oasis.models.Course import Course
 
 from oasis import app
 from .lib.Util import authenticated
@@ -26,7 +26,7 @@ def practice_top():
     """ Present the top level practice page - let them choose a course """
     return render_template(
         "practicetop.html",
-        courses=Setup.get_sorted_courselist()
+        courses=Course.all()
     )
 
 
@@ -41,22 +41,22 @@ def practice_choose_topic(course_id):
         course = None
         abort(404)
     try:
-        topics = course.topics()
+        topics = list(course.topics())
     except KeyError:
         topics = []
         abort(404)
 
     members = None
     for topic in topics:
-        if topic['visibility'] == 2:  # course only
+        if topic.visibility == 2:  # course only
             if not members:
                 members = course.get_users()
             if not user_id in members:
                 topics.remove(topic)
     return render_template(
         "practicecourse.html",
-        courses=Setup.get_sorted_courselist(),
-        canpreview=check_perm(user_id, course_id, "questionpreview"),
+        courses=Course.all(),
+        canpreview=Permission.check_perm(user_id, course_id, "questionpreview"),
         topics=topics,
         course=course
     )
@@ -92,7 +92,7 @@ def practice_choose_question(topic_id):
 
     return render_template(
         "practicetopic.html",
-        canpreview=check_perm(user_id, course.id, "questionpreview"),
+        canpreview=Permission.check_perm(user_id, course.id, "questionpreview"),
         topics=topics,
         topic_id=topic_id,
         course=course,
@@ -116,7 +116,7 @@ def practice_choose_question_stats(topic_id):
 
     return render_template(
         "practicetopicstats.html",
-        canpreview=check_perm(user_id, course.id, "questionpreview"),
+        canpreview=Permission.check_perm(user_id, course.id, "questionpreview"),
         topics=topics,
         topic_id=topic_id,
         course=course,

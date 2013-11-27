@@ -173,20 +173,3 @@ def doTopicPageCommands(request, topic_id, user_id):
                     "Unable to create new question (%s) (%s)" %
                     (new_title, new_position))
     return 1, {'mesg': mesg}
-
-
-def get_sorted_courselist(with_stats=False, only_active=True):
-    """Return a list of courses suitable for choosing one to edit
-         [  ('example101', { coursedict }),  ('sorted302', { coursedict } )  ]
-    """
-
-    courses = Course.all(only_active=only_active)
-
-    inorder = []
-    for course in courses:
-        if with_stats:
-            course.students = course.get_users()
-            course.size = len(course.students)
-        inorder.append((course.name, course))
-    inorder.sort()
-    return inorder

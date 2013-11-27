@@ -130,7 +130,7 @@ class TestApp(TestCase):
 
         match = list(Course.all(only_active=False))
         self.assertEqual(len(match), 4)
-        self.assertListEqual(match, [c1,c2,c3,c4])
+        self.assertListEqual(match, [c1, c2, c3, c4])
 
         active = list(Course.all(only_active=True))
         self.assertEqual(len(active), 2)
