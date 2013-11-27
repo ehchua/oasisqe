@@ -10,4 +10,6 @@ import os
 
 sys.path.append(os.path.dirname(__file__))
 
-from oasis import app as application
+import oasis
+
+application = oasis.app

@@ -27,7 +27,8 @@ from oasis.lib.General import date_from_py2js
 from oasis.lib import External
 from oasis.models.Group import Group
 
-from oasis import app, require_course_perm, require_perm
+from oasis import app
+from .lib.Util import require_course_perm, require_perm
 
 
 @app.route("/cadmin/<int:course_id>/top")

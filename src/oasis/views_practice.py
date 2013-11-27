@@ -16,7 +16,8 @@ from oasis.lib.Permissions import check_perm
 from oasis.models.Topic import Topic
 from oasis.models.Course import Course
 
-from oasis import app, authenticated
+from oasis import app
+from .lib.Util import authenticated
 
 
 @app.route("/practice/top")

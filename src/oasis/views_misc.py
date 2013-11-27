@@ -13,20 +13,333 @@ import datetime
 
 from flask import render_template, session, \
     request, redirect, abort, url_for, flash, \
-    send_file, Response
-from logging import log, INFO
+    send_file, Response, render_template_string
+from logging import log, INFO, ERROR
 
-from .lib import DB, Attach, QEditor
-from oasis.models.Course import Course
-from oasis.models.Topic import Topic
+from .lib import DB, Attach, QEditor, OaConfig
+
 
 MYPATH = os.path.dirname(__file__)
 
+from oasis import app, db
 from .lib.Audit import audit
 from .lib.Permissions import check_perm
+from .lib.Util import authenticated, send_email
+from .models import User, Message, Topic, Course
 
-from oasis import app, authenticated
-from .models.User import User
+
+
+@app.route("/")
+def index():
+    """ Main landing page. Welcome them and give them some login instructions.
+    """
+    if 'user_id' in session:
+        return redirect(url_for("main_top"))
+
+    if OaConfig.default == "landing":
+        mesg_login = Message.text_by_name("loginmotd")
+        alt_landing = os.path.join(OaConfig.theme_path, "landing_page.html")
+        if os.path.isfile(alt_landing):
+            tmpf = open(alt_landing)
+            tmpl = tmpf.read()
+            tmpf.close()
+            return render_template_string(tmpl, mesg_login=mesg_login)
+        return render_template("landing_page.html", mesg_login=mesg_login)
+    if OaConfig.default == "locallogin":
+        return redirect(url_for("login_local"))
+    if OaConfig.default == "webauth":
+        return redirect(url_for("login_webauth_submit"))
+    return render_template("landing_page.html")
+
+
+@app.route("/login/local/")
+def login_local():
+    """ Present a login page for people with local OASIS accounts to log in"""
+
+    mesg_login = Message.text_by_name("loginmotd")
+    return render_template("login_screen_local.html", mesg_login=mesg_login)
+
+
+@app.route("/login/local/submit", methods=['POST', ])
+def login_local_submit():
+    """ They've entered some credentials on the local login screen.
+        Check them, then set up the session or redirect back with an error.
+    """
+    if not 'username' in request.form or not 'password' in request.form:
+        log(INFO, "Failed Login")
+        flash("Incorrect name or password.")
+        return redirect(url_for("login_local"))
+
+    username = request.form['username']
+    password = request.form['password']
+
+    u = User.verify_password(username, password)
+    if not u:
+        log(INFO, "Failed Login for %s" % username)
+        flash("Incorrect name or password.")
+        return redirect(url_for("login_local"))
+
+    if not u.confirmed:
+        flash("""Your account is not yet confirmed. You should have received
+                 an email with instructions in it to do so.""")
+        return redirect(url_for("login_local"))
+    session['username'] = u.uname
+    session['user_id'] = u.id
+    session['user_givenname'] = u.givenname
+    session['user_familyname'] = u.familyname
+    session['user_fullname'] = u.fullname
+    session['user_authtype'] = "local"
+
+    audit(1, u.id, u.id, "UserAuth",
+          "%s successfully logged in locally" % (session['username'],))
+
+    db.session.commit()
+    if 'redirect' in session:
+        log(INFO, "Following redirect for %s" % username)
+        target = OaConfig.parentURL + session['redirect']
+        del session['redirect']
+        return redirect(target)
+    log(INFO, "Successful Login for %s" % username)
+    return redirect(url_for("main_top"))
+
+
+@app.route("/login/signup")
+def login_signup():
+    """ Present a signup page for people to register a new account."""
+    if not OaConfig.open_registration:
+        abort(404)
+
+    return render_template("login_signup.html")
+
+
+@app.route("/login/forgot_pass")
+def login_forgot_pass():
+    """ Ask them for their username to begin forgotten password process."""
+
+    return render_template("login_forgot_pass.html")
+
+
+@app.route("/login/forgot_pass/submit", methods=["POST", ])
+def login_forgot_pass_submit():
+    """ Forgot their password. Grab their username and send them a reset email.
+    """
+
+    if "cancel" in request.form:
+        flash("Password reset cancelled.")
+        return redirect(url_for("login_local"))
+
+    username = request.form.get('username', None)
+
+    if username == "admin":
+        flash("""The admin account cannot do an email password reset,
+                 please see the Installation instructions.""")
+        return redirect(url_for("login_forgot_pass"))
+
+    u = User.get_by_uname(username)
+    if not u:
+        flash("Unknown username ")
+        return redirect(url_for("login_forgot_pass"))
+
+    if not u.source == "local":
+        flash("Your password is not managed by OASIS, "
+              "please contact IT Support.")
+        return redirect(url_for("login_forgot_pass"))
+
+    code = u.gen_confirm_code()
+
+    if not u.email:
+        flash("We do not appear to have an email address on file for "
+              "that account.")
+        return redirect(url_for("login_forgot_pass"))
+
+    text_body = render_template(os.path.join("email", "forgot_pass.txt"), code=code)
+    html_body = render_template(os.path.join("email", "forgot_pass.html"), code=code)
+    send_email(u.email,
+               from_addr=None,
+               subject="OASIS Password Reset",
+               text_body=text_body,
+               html_body=html_body)
+
+    db.session.add(u)
+    db.session.commit()
+
+    return render_template("login_forgot_pass_submit.html")
+
+
+@app.route("/login/confirm/<string:code>")
+def login_confirm(code):
+    """ They've clicked on a confirmation link."""
+    if not OaConfig.open_registration:
+        abort(404)
+
+    if len(code) > 20:
+        abort(404)
+
+    user = User.find_by_confirmation_code(code)
+    if not user:
+        abort(404)
+    user.confirmed = True
+    user.confirmation_code = ""
+    db.session.add(user)
+    db.session.commit()
+    return render_template("login_signup_confirmed.html")
+
+
+@app.route("/login/email_passreset/<string:code>")
+def login_email_passreset(code):
+    """ They've clicked on a password reset link.
+        Log them in (might as well) and send them to the password reset page."""
+    # This will also confirm their email if they haven't.
+    # Doesn't seem to be any harm in doing that
+
+    if len(code) > 20:
+        abort(404)
+
+    user = User.find_by_confirmation_code(code)
+    if not user:
+        abort(404)
+    user.confirmed = True
+    user.confirmation_code = ""
+    session['username'] = user.uname
+    session['user_id'] = user.id
+    session['user_givenname'] = user.givenname
+    session['user_familyname'] = user.familyname
+    session['user_fullname'] = user.fullname
+    session['user_authtype'] = "local"
+    audit(1, user.id, user.id, "UserAuth",
+          "%s logged in using password reset email" % (session['username'],))
+
+    db.session.add(user)
+    db.session.commit(user)
+    flash("Please change your password")
+    return redirect(url_for("setup_change_pass"))
+
+
+@app.route("/login/signup/submit", methods=['POST', ])
+def login_signup_submit():
+    """ They've entered some information and want an account.
+        Do some checks and send them a confirmation email if all looks good.
+    """
+    # TODO: How do we stop someone using this to spam someone?
+    if not OaConfig.open_registration:
+        abort(404)
+    form = request.form
+    if not ('username' in form
+            and 'password' in form
+            and 'confirm' in form
+            and 'email' in form):
+        flash("Please fill in all fields")
+        return redirect(url_for("login_signup"))
+
+    username = form['username']
+    password = form['password']
+    confirm = form['confirm']
+    email = form['email']
+
+    # TODO: Sanitize username
+    if username == "" or password == "" or confirm == "" or email == "":
+        flash("Please fill in all fields")
+        return redirect(url_for("login_signup"))
+
+    if not confirm == password:
+        flash("Passwords don't match")
+        return redirect(url_for("login_signup"))
+
+    # basic checks in case they entered their street address or something
+    # a fuller check is too hard or prone to failure
+    if not "@" in email or not "." in email:
+        flash("Email address doesn't appear to be valid")
+        return redirect(url_for("login_signup"))
+
+    existing = User.get_by_uname(username)
+    if existing:
+        flash("An account with that name already exists, "
+              "please try another username.")
+        return redirect(url_for("login_signup"))
+
+    user = User(uname=username,
+                passwd="NOLOGIN",
+                email=email,
+                givenname=username,
+                familyname="",
+                acctstatus=1,
+                studentid="",
+                source="local",
+                confirmation_code="",
+                confirmed=False)
+    user.set_password(password)
+    code = user.gen_confirm_code()
+    db.session.add(user)
+    db.session.commit()
+
+    text = render_template(os.path.join("email", "confirmation.txt"),
+                           code=code)
+    html = render_template(os.path.join("email", "confirmation.html"),
+                           code=code)
+    send_email(email,
+               from_addr=None,
+               subject="OASIS Signup Confirmation",
+               text_body=text,
+               html_body=html)
+
+    return render_template("login_signup_submit.html", email=email)
+
+
+@app.route("/login/webauth/error")
+def login_webauth_error():
+    """ They've tried to use web authentication but the web server doesn't
+        appear to be providing the right credentials. Display an error page.
+    """
+
+    return render_template("login_webauth_error.html")
+
+
+@app.route("/login/webauth/submit")
+def login_webauth_submit():
+    """ The web server should have verified their credentials and
+        provide it in env['REMOTE_USER']
+        Check them, then set up the session or redirect back with an error.
+        If we haven't seen them before, check with our user account feed(s)
+        to see if we can find them.
+    """
+    if not 'REMOTE_USER' in request.environ:
+        log(ERROR, "REMOTE_USER not provided by web server and 'webauth' is being attempted.")
+        return redirect(url_for("login_webauth_error"))
+
+    username = request.environ['REMOTE_USER']
+
+    #  TODO: this is for UofA, how do we make it more general?
+    if '@' in username:
+        username = username.split('@')[0]
+
+    user = User.get_by_uname(username)
+    if not user:
+        user = User(username=username, givenname='', familyname='', email='',
+                    acctstatus=1, student_id='', source="",
+                    expiry='', confirmation_code='', confirmed=True)
+        db.session.add(user)
+        audit(1, user.id, user.id, "UserAuth",
+              "creating local account for webauth user %s" % username)
+        db.session.commit()
+
+    session['username'] = username
+    session['user_id'] = user.id
+    session['user_givenname'] = user.givenname
+    session['user_familyname'] = user.familyname
+    session['user_fullname'] = user.fullname
+    session['user_authtype'] = "httpauth"
+
+    audit(1, user.id, user.id, "UserAuth",
+          "%s successfully logged in via webauth" % username)
+
+    if 'redirect' in session:
+        target = OaConfig.parentURL + session['redirect']
+        del session['redirect']
+        return redirect(target)
+
+    return redirect(url_for("main_top"))
+
+
 
 
 # Does its own auth because it may be used in embedded questions
@@ -154,18 +467,19 @@ def qedit_raw_edit(topic_id, qt_id):
     """
     user_id = session['user_id']
 
-    course_id = Topics.get_course_id(topic_id)
+    topic = Topic.get(topic_id)
+    course = Course.get(topic.course)
 
-    if not (check_perm(user_id, course_id, "courseadmin")
-            or check_perm(user_id, course_id, "courseadmin")
-            or check_perm(user_id, course_id, "questionedit")
-            or check_perm(user_id, course_id, "questionsource")):
+    if not (check_perm(user_id, course.id, "courseadmin")
+            or check_perm(user_id, course.id, "courseadmin")
+            or check_perm(user_id, course.id, "questionedit")
+            or check_perm(user_id, course.id, "questionsource")):
         flash("You do not have question editor privilege in this course")
         return redirect(url_for("cadmin_edit_topic",
-                                course_id=course_id, topic_id=topic_id))
+                                course_id=course.id, topic_id=topic_id))
 
-    course = Courses2.get_course(course_id)
-    topic = Topics.get_topic(topic_id)
+    course = Course.get(course.id)
+    topic = Topic.get(topic_id)
     qtemplate = DB.get_qtemplate(qt_id)
     try:
         html = DB.get_qt_att(qt_id, "qtemplate.html")
@@ -201,14 +515,15 @@ def qedit_raw_save(topic_id, qt_id):
     """ Accept the question editor form and save the results. """
     valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     user_id = session['user_id']
-    course_id = Topics.get_course_id(topic_id)
-    if not (check_perm(user_id, course_id, "courseadmin")
-            or check_perm(user_id, course_id, "courseadmin")
-            or check_perm(user_id, course_id, "questionedit")
-            or check_perm(user_id, course_id, "questionsource")):
+    topic = Topic.get(topic_id)
+    course = Course.get(topic.course)
+    if not (check_perm(user_id, course.id, "courseadmin")
+            or check_perm(user_id, course.id, "courseadmin")
+            or check_perm(user_id, course.id, "questionedit")
+            or check_perm(user_id, course.id, "questionsource")):
         flash("You do not have question editor privilege in this course")
         return redirect(url_for("cadmin_edit_topic",
-                                course_id=course_id,
+                                course_id=course.id,
                                 topic_id=topic_id))
 
     form = request.form
@@ -216,7 +531,7 @@ def qedit_raw_save(topic_id, qt_id):
     if 'cancel' in form:
         flash("Question editing cancelled, changes not saved.")
         return redirect(url_for("cadmin_edit_topic",
-                                course_id=course_id,
+                                course_id=course.id,
                                 topic_id=topic_id))
 
     version = DB.incr_qt_version(qt_id)

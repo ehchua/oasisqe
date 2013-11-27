@@ -18,7 +18,8 @@ from oasis.models.User import User
 MYPATH = os.path.dirname(__file__)
 
 from oasis.lib.Permissions import satisfy_perms
-from oasis import app, authenticated, require_perm
+from oasis import app
+from .lib.Util import authenticated, require_perm
 
 
 @app.route("/api/exam/<int:course_id>/<int:exam_id>/qtemplates")

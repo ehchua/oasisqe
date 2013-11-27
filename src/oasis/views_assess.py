@@ -21,7 +21,8 @@ MYPATH = os.path.dirname(__file__)
 
 from .lib.Permissions import check_perm
 
-from oasis import app, authenticated
+from oasis import app
+from .lib.Util import authenticated
 
 
 @app.route("/assess/top")

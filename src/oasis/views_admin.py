@@ -17,11 +17,12 @@ from oasis.lib import Setup, External
 
 MYPATH = os.path.dirname(__file__)
 from .lib import DB
-from oasis import app, require_perm, db
-from .models.Group import Group
-from .models.Feed import Feed
-from .models.UFeed import UFeed
-from .models.Period import Period
+from oasis import app, db
+from .lib.Util import require_perm
+from .models import Group
+from .models import Feed
+from .models import UFeed
+from .models import Period
 # from logging import log, INFO
 
 
