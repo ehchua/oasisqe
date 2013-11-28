@@ -11,7 +11,7 @@ import os
 from flask import render_template, session, \
     request, redirect, url_for, flash, abort
 
-from oasis.lib import General, Exams, Setup
+from oasis.lib import General, Exams
 
 MYPATH = os.path.dirname(__file__)
 
@@ -40,7 +40,7 @@ def setup_courses():
 
     return render_template(
         "setupchoosecourse.html",
-        courses=Setup.get_sorted_courselist(only_active=False),
+        courses=Course.all(only_active=False),
         is_sysadmin=is_sysadmin
     )
 

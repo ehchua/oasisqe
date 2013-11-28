@@ -13,7 +13,7 @@ from datetime import datetime
 from flask import render_template, \
     request, redirect, abort, url_for, flash
 
-from oasis.lib import Setup, External
+from oasis.lib import External
 
 MYPATH = os.path.dirname(__file__)
 from .lib import DB
@@ -24,6 +24,7 @@ from .models.Feed import Feed
 from .models.UFeed import UFeed
 from .models.Period import Period
 from .models.Course import Course
+from .models.Message import Message
 # from logging import log, INFO
 
 
@@ -58,7 +59,7 @@ def admin_sysstats():
     db_sizes = DB.get_db_size()
     return render_template(
         "admin_sysstats.html",
-        courses=Setup.get_sorted_courselist(),
+        courses=Course.all(only_active=False),
         db_version=db_version,
         db_sizes=db_sizes
     )
@@ -110,7 +111,7 @@ def admin_add_group():
     periods = Period.all_list()
     gtypes = Group.all_gtypes()
     group = Group()
-    group.gtype=1
+    group.gtype = 1
     return render_template(
         "admin_editgroup.html",
         feeds=feeds,
@@ -617,23 +618,23 @@ def admin_course_save(course_id):
     course = Course.get(course_id)
     groups = course.get_groups()
 
-    for g_id, group in groups.iteritems():
-        if form.get('delgroup_%s' % g_id):
+    for group in groups.iteritems():
+        if form.get('delgroup_%s' % group.id):
             changed = True
             flash("Removing group %s" % group.name, "info")
-            Course.del_group(int(g_id), course_id)
+            course.del_group(group.id)
 
     if 'course_name' in form:
         name = form['course_name']
-        if not name == course['name']:
+        if not name == course.name:
             changed = True
-            Course.set_name(course_id, name)
+            course.name = name
 
     if 'course_title' in form:
         title = form['course_title']
-        if not title == course['title']:
+        if not title == course.title:
             changed = True
-            Course.set_title(course_id, title)
+            course.title = title
 
     if 'course_active' in form:
         active = form['course_active']
@@ -641,25 +642,26 @@ def admin_course_save(course_id):
             active = True
         else:
             active = False
-        if not (active == course['active']):
+        if not (active == course.active):
             changed = True
-            Course.set_active(course_id, active)
+            course.active = active
 
     addbtn = form.get('group_addbtn')
     if addbtn:
         newgroup = form.get('addgroup', None)
         if newgroup:
-            Course.add_group(newgroup, course_id)
+            course.add_group(newgroup)
             changed = True
             group = Group.get(newgroup)
             flash("Group %s added." % group.name)
 
     if changed:
+        db.session.add(course)
+        db.session.add(group)
+        db.commit()
         flash("Course changes saved!")
         return redirect(url_for("admin_course", course_id=course_id))
 
-    course = Course.get(course_id)
-    course.size = len(Course.get_users(course_id))
     return redirect(url_for("admin_courses"))
 
 
@@ -668,8 +670,8 @@ def admin_course_save(course_id):
 def admin_editmessages():
     """ Present page to administer messages in the system """
 
-    mesg_news = DB.get_message("news")
-    mesg_login = DB.get_message("loginmotd")
+    mesg_news = Message.text_by_name("news")
+    mesg_login = Message.text_by_name("loginmotd")
     return render_template(
         "admin_editmessages.html",
         mesg_news=mesg_news,

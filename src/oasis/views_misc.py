@@ -441,7 +441,7 @@ def main_news():
     """ Present the top menu page """
     return render_template(
         "news.html",
-        news=DB.get_message("news"),
+        news=Message.text_by_name("news"),
     )
 
 
