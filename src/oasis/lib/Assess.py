@@ -174,5 +174,5 @@ def get_exam_list_sorted(user_id, prev_years=False):
             log(ERROR,
                 "Failed fetching exam list for user %s: %s" %
                 (user_id, err))
-    exams.sort(key=lambda y: y['start_epoch'], reverse=True)
+    exams.sort(key=lambda y: y.start_epoch, reverse=True)
     return exams

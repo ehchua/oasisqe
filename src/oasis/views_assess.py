@@ -32,8 +32,8 @@ def assess_top():
     """ Top level assessment page. Let them choose an assessment."""
     user_id = session['user_id']
     exams = Assess.get_exam_list_sorted(user_id=user_id, prev_years=False)
-    current_num = len([e for e in exams if e['active']])
-    upcoming_num = len([e for e in exams if e['future']])
+    current_num = len([e for e in exams if e.active])
+    upcoming_num = len([e for e in exams if e.future])
     return render_template(
         "assesstop.html",
         exams=exams,
