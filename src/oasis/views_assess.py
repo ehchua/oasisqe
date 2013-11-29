@@ -15,7 +15,7 @@ import time
 from flask import render_template, session, \
     request, redirect, abort, url_for, flash
 
-from .lib import DB, General, Exams, Assess
+from .lib import DB, General, Assess
 
 MYPATH = os.path.dirname(__file__)
 

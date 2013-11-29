@@ -11,11 +11,11 @@ import datetime
 
 from oasis.models.Permission import Permission
 from oasis.lib.Audit import audit
-from oasis.lib import DB, General, Exams
+from oasis.lib import DB, General
 from oasis.models.User import User
 from oasis.models.Course import Course
 from oasis.models.Topic import Topic
-
+from oasis.models.Exam import Exam
 
 def do_topic_update(course_id, request):
     """Read the submitted form and make relevant changes to Topic information

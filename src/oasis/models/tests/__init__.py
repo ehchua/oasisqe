@@ -3,6 +3,7 @@
 
 from unittest import TestCase
 import os
+import datetime
 
 from oasis import app, db
 
@@ -14,6 +15,7 @@ from oasis.models.Message import Message
 from oasis.models.Period import Period
 from oasis.models.Topic import Topic
 from oasis.models.UFeed import UFeed
+from oasis.models.Exam import Exam
 from oasis.models.Permission import Permission
 
 
@@ -134,4 +136,20 @@ class TestApp(TestCase):
 
         active = list(Course.all(only_active=True))
         self.assertEqual(len(active), 2)
-        self.assertListEqual(active, [c1,c3])
+        self.assertListEqual(active, [c1, c3])
+
+    def test_exam_create(self):
+
+        date1 = datetime.datetime(2001, 10, 28, 7, 30, 0)
+        date2 = datetime.datetime(2001, 10, 28, 15, 0, 0)
+        date3 = datetime.datetime(2002, 1, 2, 9, 0, 0)
+
+        course1 = Course.create("examcourse", "Testing Exams 1", 0, 1)
+        course2 = Course.create("examcourse2", "Testing Exams 2", 0, 1)
+        exam1 = Exam.create(course1, 1, "Test 1", 1, 30, date1, date2, "123", code=None, instant=1)
+        exam2 = Exam.create(course1, 1, "Test 2", 1, 30, date1, date3, "1234", code=None, instant=1)
+        exam3 = Exam.create(course2, 1, "Test 3", 1, 60, date2, date3, "", code="abcd", instant=0)
+
+        self.assertEqual(exam1.duration, 30)
+        self.assertEqual(exam2.duration, 30)
+        self.assertEqual(exam3.duration, 60)

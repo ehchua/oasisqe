@@ -10,8 +10,9 @@ import re
 
 from oasis.lib.OaExceptions import OaMarkerError
 from logging import log, INFO, ERROR, WARN
-from oasis.lib import DB, General, Exams
+from oasis.lib import DB, General
 from oasis.models.Course import Course
+from oasis.models.Exam import Exam
 
 DATEFORMAT = "%d %b %H:%M"
 

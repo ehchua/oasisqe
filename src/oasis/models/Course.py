@@ -13,7 +13,6 @@ import datetime
 from oasis import db
 from oasis.models.Group import Group
 from oasis.models.Topic import Topic
-from oasis.models.Exam import Exam
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
 
 

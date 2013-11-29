@@ -15,7 +15,7 @@ from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
 from oasis.lib import OaConfig, DB, \
-    Exams, Setup, CourseAdmin, General, Assess, Spreadsheets
+    Setup, CourseAdmin, General, Assess, Spreadsheets
 from oasis.models.User import User
 from oasis.models.Topic import Topic
 from oasis.models.Course import Course

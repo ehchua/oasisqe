@@ -84,11 +84,15 @@ class Exam(db.Model):
         """ Store the exam score.
             Currently puts it into the marklog.
         """
-        _Marklog.insert()
-        run_sql("""INSERT INTO marklog (eventtime, exam, student, marker, operation, value)
-                     VALUES (NOW(), %s, %s, 1, 'Submitted', %s);""",
-                (self.id, student, "%.1f" % examtotal))
-        touchUserExam(self.id, student)
+        now = datetime.datetime.now()
+        db.insert("marklog", values={'eventtime': now,
+                                     'exam': self.id,
+                                     'student': student,
+                                     'marker': 1,
+                                     'operation': "Submitted",
+                                     'value': examtotal
+        })
+        self.touch_user_exam(student)
 
     def get_student_start_time(self, student):
         """ Return the time the student started an assessment as
@@ -572,30 +576,34 @@ class _Marklog(db.Model):
     marker = Column(Integer, ForeignKey("users.id"))
     operation = Column(String(255))
     value = Column(String(64))
-
-
-class _UserExam(db.Model):
-    pass
-
-
-class _ExamTimer(db.Model):
 #
-#CREATE TABLE examtimers (
-#    "id" SERIAL PRIMARY KEY,
-#    "exam" integer NOT NULL,
-#    "userid" integer NOT NULL,
-#    "endtime" character varying(64)
-#);
-    pass
-
-
-class _ExamQTemplate(db.Model):
-    pass
-
-
-class _ExamQuestion(db.Model):
-    pass
-
-
-
-
+#
+#class _UserExam(db.Model):
+#    __tablename__ = "userexams"
+#    pass
+#
+#
+#class _ExamTimer(db.Model):
+#    __tablename__ = "examtimers"
+##
+##CREATE TABLE examtimers (
+##    "id" SERIAL PRIMARY KEY,
+##    "exam" integer NOT NULL,
+##    "userid" integer NOT NULL,
+##    "endtime" character varying(64)
+##);
+#    pass
+#
+#
+#class _ExamQTemplate(db.Model):
+#    __tablename__ = "examqtemplates"
+#    pass
+#
+#
+#class _ExamQuestion(db.Model):
+#    __tablename__ = "examquestions"
+#    pass
+#
+#
+#
+#

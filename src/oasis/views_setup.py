@@ -11,7 +11,7 @@ import os
 from flask import render_template, session, \
     request, redirect, url_for, flash, abort
 
-from oasis.lib import General, Exams
+from oasis.lib import General
 
 MYPATH = os.path.dirname(__file__)
 
