@@ -125,27 +125,6 @@ class Course(db.Model):
             return Topic.query.filter_by(course=self.id, archived='1').order_by("position", "topic")
         return Topic.query.filter_by(course=self.id).order_by("position", "topic")
 
-    def get_exams(self, prev_years=False):
-        """ Return a list of all assessments in the course."""
-
-        if not prev_years:
-            now = datetime.datetime.now()
-            year = now.year
-            sql = """SELECT exam
-                     FROM exams
-                     WHERE course=%s
-                       AND archived='0'
-                       AND "end" > '%s-01-01';"""
-            params = (self.id, year)
-        else:
-            sql = """SELECT exam FROM exams WHERE course=%s;"""
-            params = (self.id,)
-        ret = db.engine.execute(sql, params)
-        if ret:
-            exams = [int(row[0]) for row in ret]
-            return exams
-        return []
-
     def create_config_demonstration(self, period_id):
         """ Create any needed groups/configs for a demonstration course
         """
@@ -371,20 +350,4 @@ class Course(db.Model):
             self.create_config_standard(period_id)
         elif coursetemplate == "large":
             self.create_config_large(period_id)
-
-    def get_course_exam_all(self, prev_years=False):
-        """ Return a summary of information about all current exams in the course
-            {id, course, name, description, start, duration, end, type}
-        """
-        if prev_years:
-            return Exam.query.filter_by(course=self.id, archived=0).order_by("start")
-
-        thisyear = datetime.datetime.today()
-        thisyear.month = 1
-        thisyear.day = 1
-        thisyear.hour = 0
-        thisyear.minute = 0
-        thisyear.second = 0
-
-        return Exam.query.filter_by(course=self.id, archived=0, end__gt=thisyear).order_by("start")
 

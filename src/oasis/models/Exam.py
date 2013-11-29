@@ -64,7 +64,7 @@ class Exam(db.Model):
         """ Add an assessment to the database."""
 
         newe = Exam()
-        newe.course = course
+        newe.course = course.id
         newe.owner = owner
         newe.title = title
         newe.type = examtype
@@ -93,6 +93,19 @@ class Exam(db.Model):
                                      'value': examtotal
         })
         self.touch_user_exam(student)
+
+    @staticmethod
+    def by_course(course, prev_years=False):
+        """ Return a summary of information about all current exams in the course
+            {id, course, name, description, start, duration, end, type}
+        """
+        if prev_years:
+            return Exam.query.filter_by(course=course.id, archived=0).order_by("start")
+
+        now = datetime.datetime.today()
+        thisyear = datetime.datetime(now.year, 1, 1)
+
+        return Exam.query.filter(Exam.end >= thisyear).filter_by(course=course.id, archived=0).order_by("start")
 
     def get_student_start_time(self, student):
         """ Return the time the student started an assessment as

@@ -150,6 +150,27 @@ class TestApp(TestCase):
         exam2 = Exam.create(course1, 1, "Test 2", 1, 30, date1, date3, "1234", code=None, instant=1)
         exam3 = Exam.create(course2, 1, "Test 3", 1, 60, date2, date3, "", code="abcd", instant=0)
 
+        db.session.add(exam1)
+        db.session.add(exam2)
+        db.session.add(exam3)
+        db.session.add(course1)
+        db.session.add(course2)
+        db.session.commit()
+
         self.assertEqual(exam1.duration, 30)
         self.assertEqual(exam2.duration, 30)
         self.assertEqual(exam3.duration, 60)
+
+        e1 = list(Exam.by_course(course1, prev_years=True))
+        e2 = list(Exam.by_course(course2, prev_years=True))
+
+        self.assertNotEqual(e1, [])
+        self.assertNotEqual(e2, [])
+
+        self.assertIn(exam1, e1)
+        self.assertIn(exam2, e1)
+        self.assertIn(exam3, e2)
+        self.assertNotIn(exam1, e2)
+        self.assertNotIn(exam2, e2)
+        self.assertNotIn(exam3, e1)
+
