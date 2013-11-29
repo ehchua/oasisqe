@@ -914,64 +914,6 @@ def mark_q(qid, answers):
     return marks
 
 
-def is_now(start, end):
-    """ Return True if now is in the given period"""
-    return is_between(datetime.datetime.now(), start, end)
-
-
-def is_between(date, start, end):
-    """ Return True if the given date is between the start and end date.
-        All arguments should be datetime objects.
-    """
-    if start < end:
-        return end > date > start
-
-    return start > date > end
-
-
-def is_recent(date):
-    """ Return True if the given date (datetime object) is in the near past.
-        Currently this means within 24 hours, but that may change.
-    """
-    end = datetime.datetime.now()
-    start = end - datetime.timedelta(1)    # ( timedelta param is in days )
-    return is_between(date, start, end)
-
-
-def is_soon(date):
-    """ Return True if the given date (datetime object) is in the near future.
-        Currently this means within 24 hours, but that may change.
-    """
-    end = datetime.datetime.now() + datetime.timedelta(1)
-    start = datetime.datetime.now()
-
-    return is_between(date, start, end)
-
-
-def is_future(date):
-    """ isFuture isn't right, but a lot of code now depends on its behaviour.
-        isFuture2 does things correctly and should be phased in over time.
-
-        Return True if the given date (datetime object) is in the future.
-    """
-    now = datetime.datetime.now()
-    if date > now:
-        return True
-    return False
-
-
-def is_past(date):
-    """ isFuture isn't right, but a lot of code now depends on its behaviour.
-        isFuture2 does things correctly and should be phased in over time.
-
-        Return True if the given date (datetime object) is in the past.
-    """
-    now = datetime.datetime.now()
-    if date < now:
-        return True
-    return False
-
-
 def get_exam_q(exam, page, user_id):
     """ Find the appropriate exam question for the user.
         Generate it if there isn't one already.
@@ -1002,38 +944,6 @@ def get_exam_qs(student, exam):
             question = int(gen_exam_q(exam, position, student))
         questions.append(question)
     return questions
-
-
-def remark_exam(exam, student):
-    """Re-mark the exam using the latest marking. """
-    qtemplates = Exams.get_qts(exam)
-    examtotal = 0.0
-    end = Exams.get_mark_time(exam, student)
-    for qtemplate in qtemplates:
-        question = DB.get_exam_q_by_qt_student(exam, qtemplate, student)
-        answers = DB.get_q_guesses_before_time(question, end)
-        try:
-            marks = mark_q(question, answers)
-        except OaMarkerError:
-            log(WARN,
-                "Marker Error, question %d while re-marking exam %s for student %s!" % (question, exam, student))
-            marks = {}
-        parts = [int(var[1:]) for var in marks.keys() if re.search("^A([0-9]+)$", var) > 0]
-        parts.sort()
-        total = 0.0
-        for part in parts:
-            if marks['C%d' % part] == 'Correct':
-                marks['C%d' % part] = "<b><font color='darkgreen'>Correct</font></b>"
-            try:
-                mark = float(marks['M%d' % part])
-            except (ValueError, TypeError, KeyError):
-                mark = 0
-            total += mark
-        DB.update_q_score(question, total)
-        #        OaDB.setQuestionStatus(question, 3)    # 3 = marked
-        examtotal += total
-    Exams.save_score(exam, student, examtotal)
-    return examtotal
 
 
 def remark_prac(question):

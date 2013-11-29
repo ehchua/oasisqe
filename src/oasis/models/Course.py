@@ -13,6 +13,7 @@ import datetime
 from oasis import db
 from oasis.models.Group import Group
 from oasis.models.Topic import Topic
+from oasis.models.Exam import Exam
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
 
 
@@ -149,7 +150,6 @@ class Course(db.Model):
     def create_config_demonstration(self, period_id):
         """ Create any needed groups/configs for a demonstration course
         """
-
         # An ad-hoc Staff group
         name = "C_%s_STAFF_%s" % (self.name, period_id)
         group = Group.get_by_name(name)
@@ -304,7 +304,6 @@ class Course(db.Model):
 
         self.add_group(group.id)
 
-
     def create_config_large(self, period_id):
         """ Create any needed groups/configs for a large course
         """
@@ -359,7 +358,6 @@ class Course(db.Model):
 
         self.add_group(group.id)
 
-
     def create_config(self, coursetemplate, period_id):
         """ Course is being created. Setup some configuration depending on
             given values.
@@ -380,32 +378,14 @@ class Course(db.Model):
             {id, course, name, description, start, duration, end, type}
         """
         if prev_years:
-            sql = """SELECT exam, course, title, "type", "start", "end",
-                        description, duration, to_char("start", 'DD Mon'),
-                        to_char("start", 'hh:mm'), to_char("end", 'DD Mon'),
-                        to_char("end", 'hh:mm')
-                     FROM exams
-                     WHERE course='%s' AND archived='0'
-                     ORDER BY "start";"""
-        else:
-            sql = """SELECT exam, course, title, "type", "start", "end",
-                        description, duration, to_char("start", 'DD Mon'),
-                        to_char("start", 'hh:mm'), to_char("end", 'DD Mon'),
-                        to_char("end", 'hh:mm')
-                     FROM exams
-                     WHERE course='%s'
-                     AND archived='0'
-                     AND extract('year' from "end") = extract('year' from now())
-                     ORDER BY "start";"""
-        params = (course_id,)
-        ret = run_sql(sql, params)
-        info = {}
-        if ret:
-            for row in ret:
-                info[int(row[0])] = {'id': row[0], 'course': row[1], 'name': row[2],
-                                     'type': row[3], 'start': row[4], 'end': row[5],
-                                     'description': row[6], 'duration': row[7],
-                                     'startdate': row[8], 'starttime': row[9],
-                                     'enddate': row[10], 'endtime': row[11]}
-        return info
+            return Exam.query.filter_by(course=self.id, archived=0).order_by("start")
+
+        thisyear = datetime.datetime.today()
+        thisyear.month = 1
+        thisyear.day = 1
+        thisyear.hour = 0
+        thisyear.minute = 0
+        thisyear.second = 0
+
+        return Exam.query.filter_by(course=self.id, archived=0, end__gt=thisyear).order_by("start")
 

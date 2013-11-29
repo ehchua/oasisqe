@@ -243,3 +243,59 @@ def send_email(to_addr, from_addr=None, subject="Message from OASIS",
     return True
 
 
+def is_now(start, end):
+    """ Return True if now is in the given period"""
+    return is_between(datetime.datetime.now(), start, end)
+
+
+def is_between(date, start, end):
+    """ Return True if the given date is between the start and end date.
+        All arguments should be datetime objects.
+    """
+    if start < end:
+        return end > date > start
+
+    return start > date > end
+
+
+def is_recent(date):
+    """ Return True if the given date (datetime object) is in the near past.
+        Currently this means within 24 hours, but that may change.
+    """
+    end = datetime.datetime.now()
+    start = end - datetime.timedelta(1)    # ( timedelta param is in days )
+    return is_between(date, start, end)
+
+
+def is_soon(date):
+    """ Return True if the given date (datetime object) is in the near future.
+        Currently this means within 24 hours, but that may change.
+    """
+    end = datetime.datetime.now() + datetime.timedelta(1)
+    start = datetime.datetime.now()
+
+    return is_between(date, start, end)
+
+
+def is_future(date):
+    """ isFuture isn't right, but a lot of code now depends on its behaviour.
+        isFuture2 does things correctly and should be phased in over time.
+
+        Return True if the given date (datetime object) is in the future.
+    """
+    now = datetime.datetime.now()
+    if date > now:
+        return True
+    return False
+
+
+def is_past(date):
+    """ isFuture isn't right, but a lot of code now depends on its behaviour.
+        isFuture2 does things correctly and should be phased in over time.
+
+        Return True if the given date (datetime object) is in the past.
+    """
+    now = datetime.datetime.now()
+    if date < now:
+        return True
+    return False

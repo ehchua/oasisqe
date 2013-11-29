@@ -287,7 +287,6 @@ class Exam(db.Model):
                                             'topicposition': int(row[4])})
         return [positions[p] for p in positions.keys()]
 
-
     def get_num_done(self, group=None):
         """Return the number of exams completed by the given group"""
         assert isinstance(exam, int)
@@ -514,6 +513,37 @@ class Exam(db.Model):
         sql = "UPDATE userexams SET lastchange=NOW() WHERE exam=%s AND student=%s;"
         params = (exam_id, user_id)
         run_sql(sql, params)
+
+    def remark_exam(self, student):
+        """Re-mark the exam using the latest marking. """
+        qtemplates = Exams.get_qts(exam)
+        examtotal = 0.0
+        end = Exams.get_mark_time(exam, student)
+        for qtemplate in qtemplates:
+            question = DB.get_exam_q_by_qt_student(exam, qtemplate, student)
+            answers = DB.get_q_guesses_before_time(question, end)
+            try:
+                marks = mark_q(question, answers)
+            except OaMarkerError:
+                log(WARN,
+                    "Marker Error, question %d while re-marking exam %s for student %s!" % (question, exam, student))
+                marks = {}
+            parts = [int(var[1:]) for var in marks.keys() if re.search("^A([0-9]+)$", var) > 0]
+            parts.sort()
+            total = 0.0
+            for part in parts:
+                if marks['C%d' % part] == 'Correct':
+                    marks['C%d' % part] = "<b><font color='darkgreen'>Correct</font></b>"
+                try:
+                    mark = float(marks['M%d' % part])
+                except (ValueError, TypeError, KeyError):
+                    mark = 0
+                total += mark
+            DB.update_q_score(question, total)
+            #        OaDB.setQuestionStatus(question, 3)    # 3 = marked
+            examtotal += total
+        Exams.save_score(exam, student, examtotal)
+        return examtotal
 
 
 
