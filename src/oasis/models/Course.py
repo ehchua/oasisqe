@@ -375,3 +375,37 @@ class Course(db.Model):
         elif coursetemplate == "large":
             self.create_config_large(period_id)
 
+    def get_course_exam_all(self, prev_years=False):
+        """ Return a summary of information about all current exams in the course
+            {id, course, name, description, start, duration, end, type}
+        """
+        if prev_years:
+            sql = """SELECT exam, course, title, "type", "start", "end",
+                        description, duration, to_char("start", 'DD Mon'),
+                        to_char("start", 'hh:mm'), to_char("end", 'DD Mon'),
+                        to_char("end", 'hh:mm')
+                     FROM exams
+                     WHERE course='%s' AND archived='0'
+                     ORDER BY "start";"""
+        else:
+            sql = """SELECT exam, course, title, "type", "start", "end",
+                        description, duration, to_char("start", 'DD Mon'),
+                        to_char("start", 'hh:mm'), to_char("end", 'DD Mon'),
+                        to_char("end", 'hh:mm')
+                     FROM exams
+                     WHERE course='%s'
+                     AND archived='0'
+                     AND extract('year' from "end") = extract('year' from now())
+                     ORDER BY "start";"""
+        params = (course_id,)
+        ret = run_sql(sql, params)
+        info = {}
+        if ret:
+            for row in ret:
+                info[int(row[0])] = {'id': row[0], 'course': row[1], 'name': row[2],
+                                     'type': row[3], 'start': row[4], 'end': row[5],
+                                     'description': row[6], 'duration': row[7],
+                                     'startdate': row[8], 'starttime': row[9],
+                                     'enddate': row[10], 'endtime': row[11]}
+        return info
+

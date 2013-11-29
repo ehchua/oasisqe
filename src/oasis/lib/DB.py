@@ -79,29 +79,6 @@ def get_q_marktime(question):
     return None
 
 
-def get_exam_q_by_pos_student(exam, position, student):
-    """ Return the question at the given position in the exam for the student.
-        Return False if there is no question assigned yet.
-    """
-    ret = run_sql("""SELECT question FROM examquestions
-                        WHERE student = %s
-                        AND position = %s
-                        AND exam = %s;""", (student, position, exam))
-    if ret:
-        return int(ret[0][0])
-    return False
-
-
-def get_exam_q_by_qt_student(exam, qt_id, student):
-    """ Fetch an assessment question by student"""
-    ret = run_sql("""SELECT question FROM questions
-                        WHERE student=%s
-                        AND qtemplate=%s
-                        AND exam=%s;""", (student, qt_id, exam))
-    if ret:
-        return int(ret[0][0])
-    return False
-
 
 def get_q_by_qt_student(qt_id, student):
     """ Fetch a question by student"""
@@ -527,30 +504,6 @@ def get_qt_att(qt_id, name, version=1000000000):
     return value
 
 
-def get_exam_qts_in_pos(exam_id, position):
-    """ Return the question templates in the given position in the exam, or 0.
-    """
-    ret = run_sql("""SELECT qtemplate
-                     FROM examqtemplates
-                     WHERE exam=%s
-                       AND position=%s;""", (exam_id, position))
-    if ret:
-        qtemplates = [int(row[0]) for row in ret]
-        return qtemplates
-    return []
-
-
-def get_qt_exam_pos(exam_id, qt_id):
-    """Return the position a given question template holds in the exam"""
-    ret = run_sql("""SELECT position
-                     FROM examqtemplates
-                     WHERE exam=%s
-                       AND qtemplate=%s;""", (exam_id, qt_id))
-    if ret:
-        return int(ret[0][0])
-    return None
-
-
 def get_qtemplate_topic_pos(qt_id, topic_id):
     """ Fetch the position of a question template in a topic. """
     ret = run_sql("""SELECT position
@@ -713,24 +666,6 @@ def update_qt_marker(qt_id, marker):
     run_sql(sql, params)
 
 
-def update_exam_qt_in_pos(exam_id, position, qtlist):
-    """ Set the qtemplates at a given position in the exam to match
-        the passed list. If we get qtlist = [0], we remove that position.
-    """
-    # First remove the current set
-    run_sql("DELETE FROM examqtemplates "
-            "WHERE exam=%s "
-            "AND position=%s;", (exam_id, position))
-    # Now insert the new set
-    for alt in qtlist:
-        if alt > 0:
-            if isinstance(alt, int):  # might be '---'
-                run_sql("""INSERT INTO examqtemplates
-                                (exam, position, qtemplate)
-                           VALUES (%s,%s,%s);""",
-                                (exam_id, position, alt))
-
-
 def update_qt_pos(qt_id, topic_id, position):
     """ Update the position a question template holds in a topic."""
     previous = get_qtemplate_topic_pos(qt_id, topic_id)
@@ -857,59 +792,6 @@ def _deserialize_courseexaminfo(obj):
         info[k]['start'] = datetime.datetime.strptime(exam['start'], FMT)
         info[k]['end'] = datetime.datetime.strptime(exam['end'], FMT)
     return info
-
-
-def get_course_exam_all(course_id, prev_years=False):
-    """ Return a summary of information about all current exams in the course
-        {id, course, name, description, start, duration, end, type}
-    """
-    if prev_years:
-        sql = """SELECT exam, course, title, "type", "start", "end",
-                    description, duration, to_char("start", 'DD Mon'),
-                    to_char("start", 'hh:mm'), to_char("end", 'DD Mon'),
-                    to_char("end", 'hh:mm')
-                 FROM exams
-                 WHERE course='%s' AND archived='0'
-                 ORDER BY "start";"""
-    else:
-        sql = """SELECT exam, course, title, "type", "start", "end",
-                    description, duration, to_char("start", 'DD Mon'),
-                    to_char("start", 'hh:mm'), to_char("end", 'DD Mon'),
-                    to_char("end", 'hh:mm')
-                 FROM exams
-                 WHERE course='%s'
-                 AND archived='0'
-                 AND extract('year' from "end") = extract('year' from now())
-                 ORDER BY "start";"""
-    params = (course_id,)
-    ret = run_sql(sql, params)
-    info = {}
-    if ret:
-        for row in ret:
-            info[int(row[0])] = {'id': row[0], 'course': row[1], 'name': row[2],
-                                 'type': row[3], 'start': row[4], 'end': row[5],
-                                 'description': row[6], 'duration': row[7],
-                                 'startdate': row[8], 'starttime': row[9],
-                                 'enddate': row[10], 'endtime': row[11]}
-    return info
-
-
-def add_exam_q(user, exam, question, position):
-    """Record that the student was assigned the given question for assessment.
-    """
-    sql = """SELECT id FROM examquestions
-              WHERE exam = %s
-              AND student = %s
-              AND position = %s
-              AND question = %s;"""
-    params = (exam, user, position, question)
-    ret = run_sql(sql, params)
-    if ret:  # already exists
-        return
-    run_sql("INSERT INTO examquestions (exam, student, position, question) "
-            "VALUES (%s, %s, %s, %s);",
-            (exam, user, position, question))
-    touch_user_exam(exam, user)
 
 
 def get_student_q_practice_num(user_id, qt_id):
@@ -1053,18 +935,6 @@ def get_q_stats_class(course, qt_id):
                          'max': float(i[3]),
                          'min': float(i[4])}
             return stats
-
-
-def touch_user_exam(exam_id, user_id):
-    """ Update the lastchange field on a user exam so other places can tell that
-        something changed. This should probably be done any time one of the
-        following changes:
-            userexam fields on that row
-            question/guess in the exam changes
-    """
-    sql = "UPDATE userexams SET lastchange=NOW() WHERE exam=%s AND student=%s;"
-    params = (exam_id, user_id)
-    run_sql(sql, params)
 
 
 def get_qt_editor(qt_id):

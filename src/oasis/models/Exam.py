@@ -426,14 +426,105 @@ class Exam(db.Model):
 
         return results
 
+    def get_exam_q_by_pos_student(self, position, student):
+        """ Return the question at the given position in the exam for the student.
+            Return False if there is no question assigned yet.
+        """
+        ret = run_sql("""SELECT question FROM examquestions
+                            WHERE student = %s
+                            AND position = %s
+                            AND exam = %s;""", (student, position, exam))
+        if ret:
+            return int(ret[0][0])
+        return False
+
+    def get_exam_q_by_qt_student(self, qt_id, student):
+        """ Fetch an assessment question by student"""
+        ret = run_sql("""SELECT question FROM questions
+                            WHERE student=%s
+                            AND qtemplate=%s
+                            AND exam=%s;""", (student, qt_id, exam))
+        if ret:
+            return int(ret[0][0])
+        return False
+
+    def get_exam_qts_in_pos(self, position):
+        """ Return the question templates in the given position in the exam, or 0.
+        """
+        ret = run_sql("""SELECT qtemplate
+                         FROM examqtemplates
+                         WHERE exam=%s
+                           AND position=%s;""", (exam_id, position))
+        if ret:
+            qtemplates = [int(row[0]) for row in ret]
+            return qtemplates
+        return []
+
+    def get_qt_exam_pos(self, qt_id):
+        """Return the position a given question template holds in the exam"""
+        ret = run_sql("""SELECT position
+                         FROM examqtemplates
+                         WHERE exam=%s
+                           AND qtemplate=%s;""", (exam_id, qt_id))
+        if ret:
+            return int(ret[0][0])
+        return None
+
+    def update_exam_qt_in_pos(self, position, qtlist):
+        """ Set the qtemplates at a given position in the exam to match
+            the passed list. If we get qtlist = [0], we remove that position.
+        """
+        # First remove the current set
+        run_sql("DELETE FROM examqtemplates "
+                "WHERE exam=%s "
+                "AND position=%s;", (exam_id, position))
+        # Now insert the new set
+        for alt in qtlist:
+            if alt > 0:
+                if isinstance(alt, int):  # might be '---'
+                    run_sql("""INSERT INTO examqtemplates
+                                    (exam, position, qtemplate)
+                               VALUES (%s,%s,%s);""",
+                                    (exam_id, position, alt))
+
+    def add_exam_q(self, user, question, position):
+        """Record that the student was assigned the given question for assessment.
+        """
+        sql = """SELECT id FROM examquestions
+                  WHERE exam = %s
+                  AND student = %s
+                  AND position = %s
+                  AND question = %s;"""
+        params = (exam, user, position, question)
+        ret = run_sql(sql, params)
+        if ret:  # already exists
+            return
+        run_sql("INSERT INTO examquestions (exam, student, position, question) "
+                "VALUES (%s, %s, %s, %s);",
+                (exam, user, position, question))
+        touch_user_exam(exam, user)
+
+    def touch_user_exam(self, user_id):
+        """ Update the lastchange field on a user exam so other places can tell that
+            something changed. This should probably be done any time one of the
+            following changes:
+                userexam fields on that row
+                question/guess in the exam changes
+        """
+        sql = "UPDATE userexams SET lastchange=NOW() WHERE exam=%s AND student=%s;"
+        params = (exam_id, user_id)
+        run_sql(sql, params)
+
 
 
 # ----- Internal implementation details ------
 # These are a bit messy so it's intended that they may go away one day
 # Do not use directly, always go via Exam object.
 
+
 class _Marklog(db.Model):
 
+    __tablename__ = "marklog"
 #CREATE TABLE marklog (
 #    "id" SERIAL PRIMARY KEY,
 #    "eventtime" timestamp without time zone,
@@ -443,7 +534,14 @@ class _Marklog(db.Model):
 #    "operation" character varying(255),
 #    "value" character varying(64)
 #);
-    pass
+
+    id = Column(Integer, primary_key=True)
+    eventtime = Column(DateTime)
+    exam = Column(Integer, ForeignKey("exams.exam"))
+    student = Column(Integer, ForeignKey("users.id"))
+    marker = Column(Integer, ForeignKey("users.id"))
+    operation = Column(String(255))
+    value = Column(String(64))
 
 
 class _UserExam(db.Model):
