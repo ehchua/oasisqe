@@ -21,6 +21,7 @@ MYPATH = os.path.dirname(__file__)
 
 from .models.Permission import Permission
 from .models.Course import Course
+from .models.Exam import Exam
 
 from oasis import app
 from .lib.Util import authenticated
@@ -49,7 +50,7 @@ def assess_previousexams():
     user_id = session['user_id']
 
     exams = Assess.get_exam_list_sorted(user_id=user_id, prev_years=True)
-    years = [e['start'].year for e in exams]
+    years = [e.start.year for e in exams]
     years = list(set(years))
     years.sort(reverse=True)
     return render_template(
@@ -66,14 +67,14 @@ def assess_unlock(course_id, exam_id):
     """ An unlock code has been entered. """
     user_id = session['user_id']
 
-    exam = Exams.get_exam_struct(exam_id, user_id)
+    exam = Exam.get(exam_id)
 
     if not Permission.check_perm(user_id, course_id, "exampreview"):
-        if exam['future']:
+        if exam.future:
             flash("That assessment is not yet available.")
             return redirect(url_for("assess_top"))
 
-        if exam['past']:
+        if exam.past:
             flash("That assessment is closed.")
             return redirect(url_for("assess_top"))
 
@@ -81,7 +82,7 @@ def assess_unlock(course_id, exam_id):
         ucode = request.form['code']
         session['code'] = ucode
 
-        if exam['code'] == ucode:
+        if exam.code == ucode:
             flash("Assessment unlocked.")
         else:
             flash("Incorrect unlock code.")
@@ -96,7 +97,7 @@ def assess_unlock(course_id, exam_id):
 def assess_startexam(course_id, exam_id):
     """ Show the start page of the exam """
     user_id = session['user_id']
-    exam = Exams.get_exam_struct(exam_id, user_id)
+    exam = Exam.get(exam_id)
 
     if not Permission.check_perm(user_id, course_id, "exampreview"):
         if exam['future']:
@@ -107,17 +108,17 @@ def assess_startexam(course_id, exam_id):
             flash("That assessment is closed.")
             return redirect(url_for("assess_top"))
 
-    Exams.create_user_exam(user_id, exam_id)  # get it cached and ready to start
+    exam.create_user_exam(user_id)  # get it cached and ready to start
 
     if 'code' in session:
         ucode = session['code']
     else:
         ucode = ""
 
-    if exam['code'] and exam['code'] != ucode:
-        exam['locked'] = True
+    if exam.code and exam.code != ucode:
+        exam.locked = True
     else:
-        exam['locked'] = False
+        exam.locked = False
 
     return render_template(
         "assessstart.html",

@@ -13,6 +13,7 @@ import datetime
 from logging import log, INFO, ERROR
 
 from oasis.lib.OaTypes import todatetime
+from oasis.lib import Util
 
 from oasis import db
 
@@ -75,8 +76,7 @@ class Exam(db.Model):
         newe.code = code
         newe.instant = instant
 
-        log(INFO,
-            "Create Exam on course %s '%s'" % (course, title))
+        log(INFO, "Create Exam on course %s '%s'" % (course.id, title))
 
         return newe
 
@@ -358,6 +358,27 @@ class Exam(db.Model):
 
         return exam
 
+    @property
+    def active(self):
+        return Util.is_now(self.start, self.end)
+
+    @property
+    def future(self):
+        return Util.is_future(self.start)
+
+    @property
+    def past(self):
+        return Util.is_past(self.end)
+
+    @property
+    def soon(self):
+        return Util.is_soon(self.start)
+
+    @property
+    def recent(self):
+        return Util.is_recent(self.end)
+
+
     # TODO: Optimize. This is called quite a lot
     def get_as_struct(self, user_id=None, include_qtemplates=False,
                         include_stats=False):
@@ -391,11 +412,8 @@ class Exam(db.Model):
         }
 
         course = Course.get(exam['cid'])
-        exam['future'] = General.is_future(exam['start'])
-        exam['past'] = General.is_past(exam['end'])
-        exam['soon'] = General.is_soon(exam['start'])
-        exam['recent'] = General.is_recent(exam['end'])
-        exam['active'] = General.is_now(exam['start'], exam['end'])
+
+
         exam['start_epoch'] = int(exam['start'].strftime("%s"))  # used to sort
         exam['period'] = General.human_dates(exam['start'], exam['end'])
         exam['course'] = course

@@ -40,7 +40,7 @@ def setup_courses():
 
     return render_template(
         "setupchoosecourse.html",
-        courses=Course.all(only_active=False),
+        courses=list(Course.all(only_active=False)),
         is_sysadmin=is_sysadmin
     )
 

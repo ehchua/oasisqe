@@ -169,11 +169,10 @@ def get_exam_list_sorted(user_id, prev_years=False):
     exams = []
     for course in courses:
         try:
-            exams += [Exams.get_exam_struct(e, user_id)
-                      for e in course.get_exams(prev_years=prev_years)]
+            exams += Exam.by_course(course, prev_years=prev_years)
         except KeyError, err:
             log(ERROR,
                 "Failed fetching exam list for user %s: %s" %
                 (user_id, err))
-    exams.sort(key=lambda y: y.start_epoch, reverse=True)
+    exams.sort(key=lambda y: y.start, reverse=True)
     return exams

@@ -6,7 +6,7 @@
 {% if is_sysadmin %}
     <h4>Active Courses</h4>
   {%  endif %}
-      {% for name, course in courses if course.active %}
+      {% for course in courses if course.active %}
 
         <div class='row'>
           <div class='span2'><a name='course_{{ course.id }}'
@@ -25,7 +25,7 @@
       <br/>
     <h4>Hidden/Inactive Courses</h4>
 
-      {% for name, course in courses if not course.active %}
+      {% for course in courses if not course.active %}
         <div class='row'>
           <div class='span2'><a name='course_{{ course.id }}'
                                 href='{{ cf.url }}cadmin/{{ course.id }}/top'>{{ course.name }} </a>
@@ -33,8 +33,6 @@
           <div class='span6'>{{ course.title }}</div>
             </div>
       {% endfor %}
-
-
 
   {% endif %}
   </div>
