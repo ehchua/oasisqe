@@ -13,6 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask import session, redirect, url_for, request, flash
 import datetime
+import time
 from oasis.models.Permission import Permission
 import oasis
 from . import OaConfig
@@ -306,3 +307,43 @@ def secs_to_human(seconds):
     """
     perday = 86400
     return "%d days ago" % int(seconds / perday)
+
+
+
+def human_dates(start, end, html=True):
+    """ Return a string containing a nice human readable description of
+        the time period.
+        eg. if the start and end are on the same day, it only gives the date
+        once.
+        If html is set to true, the string may contain HTML formatting codes.
+    """
+    # Period is in one date.
+    if (start.year, start.month, start.day) == (end.year, end.month, end.day):
+        if html:
+            return "%s, %s to %s" % (start.strftime("%a %b %d %Y"), start.strftime("%I:%M%P"), end.strftime("%I:%M%P"))
+        else:
+            return "%s to %s" % (start.strftime("%a %b %d %Y, %I:%M%P"), end.strftime("%I:%M%P"))
+    # Spread over more than one date.
+    if html:
+        return "%s to %s" % (start.strftime("%a %b %d %Y, %I:%M%P"), end.strftime("%a %b %d %Y, %I:%M%P"))
+    else:
+        return "%s to %s" % (start.strftime("%a %b %d %Y, %I:%M%P"), end.strftime("%a %b %d %Y, %I:%M%P"))
+
+
+def human_date(date):
+    """ Return a string containing a nice human readable date/time.
+        Miss out the year if it's this year
+     """
+    today = datetime.datetime.today()
+    if today.year == date.year:
+        return date.strftime("%b %d, %I:%M%P")
+
+    return date.strftime("%Y %b %d, %I:%M%P")
+
+def date_from_py2js(when):
+    """ Convert date from Python datetime object to Javascript friendly
+        epoch integer.
+    """
+
+    return int(time.mktime(when.timetuple())) * 1000
+

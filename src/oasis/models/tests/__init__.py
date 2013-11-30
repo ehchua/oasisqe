@@ -174,3 +174,15 @@ class TestApp(TestCase):
         self.assertNotIn(exam2, e2)
         self.assertNotIn(exam3, e1)
 
+    def test_topic_course(self):
+
+        course1 = Course.create("topiccourse", "Testing Topics 1", 0, 1)
+        course2 = Course.create("topiccourse2", "Testing Topics 2", 0, 1)
+
+        topic1 = Topic.create(course1, "Topic 1", 1, position=3)
+        topic2 = Topic.create(course1, "Topic 2", 1, position=4)
+        topic3 = Topic.create(course2, "Topic 3", 1, position=5)
+
+        self.assertTrue(topic1.id)
+        self.assertTrue(topic2.id)
+        self.assertTrue(topic3.id)

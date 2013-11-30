@@ -26,7 +26,7 @@ class Topic(db.Model):
 #    "archived" boolean DEFAULT false
 #);
 
-    topic = Column(Integer, primary_key=True)
+    id = Column("topic", Integer, primary_key=True)
     course = Column(Integer, ForeignKey("courses.course"))
     title = Column(String(250), nullable=False, default="")
     visibility = Column(Integer, default=1)
@@ -96,3 +96,17 @@ class Topic(db.Model):
                                     'version': version,
                                     'status': status}
         return qtemplates
+
+
+    @staticmethod
+    def create(course, name, visibility, position=0):
+
+        newt = Topic()
+        newt.course = course.id
+        newt.name = name
+        newt.visibility = visibility
+        newt.position = position
+
+        db.session.add(newt)
+        db.session.commit()
+        return newt

@@ -15,7 +15,7 @@ from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
 from oasis.lib import OaConfig, DB, \
-    Setup, CourseAdmin, General, Assess, Spreadsheets
+    Setup, CourseAdmin, Util, Assess, Spreadsheets
 from oasis.models.User import User
 from oasis.models.Topic import Topic
 from oasis.models.Course import Course
@@ -23,7 +23,7 @@ from oasis.models.Permission import Permission
 
 MYPATH = os.path.dirname(__file__)
 
-from oasis.lib.General import date_from_py2js
+from oasis.lib.Util import date_from_py2js
 from oasis.lib import External
 from oasis.models.Group import Group
 from oasis.models.Exam import Exam
@@ -151,10 +151,8 @@ def cadmin_prev_assessments(course_id):
     if not course:
         abort(404)
 
-    exams = [Exams.get_exam_struct(exam_id, course_id)
-             for exam_id in DB.get_course_exam_all(course_id, prev_years=True)]
-
-    years = [exam['start'].year for exam in exams]
+    exams = Exam.by_course(course.id, prev_years=True)
+    years = [exam.start.year for exam in exams]
     years = list(set(years))
     years.sort(reverse=True)
     exams.sort(key=lambda y: y['start_epoch'])
@@ -291,20 +289,20 @@ def cadmin_exam_results(course_id, exam_id):
     if not course:
         abort(404)
 
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    exam = Exam.get(exam_id)
     if not exam:
         abort(404)
 
-    if not int(exam['cid']) == int(course_id):
-        flash("Assessment %s does not belong to this course." % int(exam_id))
+    if not exam.course == course_id:
+        flash("Assessment %s does not belong to this course." % exam_id)
         return redirect(url_for('cadmin_top', course_id=course_id))
 
-    exam['start_date'] = int(date_from_py2js(exam['start']))
-    exam['end_date'] = int(date_from_py2js(exam['end']))
-    exam['start_hour'] = int(exam['start'].hour)
-    exam['end_hour'] = int(exam['end'].hour)
-    exam['start_minute'] = int(exam['start'].minute)
-    exam['end_minute'] = int(exam['end'].minute)
+    exam.start_date = date_from_py2js(exam.start)
+    exam.end_date = date_from_py2js(exam.end)
+    exam.start_hour = exam.start.hour
+    exam.end_hour = exam.end.hour
+    exam.start_minute = exam.start.minute
+    exam.end_minute = exam.end.minute
 
     groups = [Group.get(g_id)
               for g_id
@@ -313,7 +311,7 @@ def cadmin_exam_results(course_id, exam_id):
     uids = set([])
     totals = {}
     for group in groups:
-        results[group.id] = Exams.get_marks(group, exam_id)
+        results[group.id] = exam.get_marks(group)
         for user_id in results[group.id]:
             uids.add(user_id)
             if not user_id in totals:
@@ -321,7 +319,7 @@ def cadmin_exam_results(course_id, exam_id):
             for qt, val in results[group.id][user_id].iteritems():
                 totals[user_id] += val['score']
 
-    questions = Exams.get_qts_list(exam_id)
+    questions = exam.get_qts_list()
     users = {}
     for uid in uids:
         users[uid] = User.get(uid)
@@ -346,19 +344,19 @@ def cadmin_export_csv(course_id, exam_id, group_id):
     if not course:
         abort(404)
 
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    exam = Exam.get(exam_id)
     if not exam:
         abort(404)
 
-    if not int(exam['cid']) == int(course_id):
-        flash("Assessment %s does not belong to this course." % int(exam_id))
+    if not exam.course == course_id:
+        flash("Assessment %s does not belong to this course." % exam_id)
         return redirect(url_for('cadmin_top', course_id=course_id))
 
     group = Group.get(group_id)
     output = Spreadsheets.exam_results_as_spreadsheet(course_id, group, exam_id)
     response = make_response(output)
     response.headers.add('Content-Type', "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8")
-    response.headers.add('Content-Disposition', 'attachment; filename="OASIS_%s_%s_Results.xlsx"' % (course['title'], exam['title']))
+    response.headers.add('Content-Disposition', 'attachment; filename="OASIS_%s_%s_Results.xlsx"' % (course.title, exam.title))
 
     return response
 
@@ -369,10 +367,10 @@ def cadmin_exam_viewmarked(course_id, exam_id, student_uid):
     """  Show a student's marked assessment results """
 
     course = Course.get(course_id)
-    try:
-        exam = Exams.get_exam_struct(exam_id, course_id)
-    except KeyError:
-        exam = {}
+    if not course:
+        abort(404)
+    exam = Exam.get(exam_id)
+    if not exam:
         abort(404)
     results, examtotal = Assess.render_own_marked_exam(student_uid, exam_id)
 
@@ -380,20 +378,20 @@ def cadmin_exam_viewmarked(course_id, exam_id, student_uid):
         status = 0
     else:
         status = 1
-    marktime = Exams.get_mark_time(exam_id, student_uid)
-    firstview = Exams.get_student_start_time(exam_id, student_uid)
-    submittime = Exams.get_submit_time(exam_id, student_uid)
+    marktime = exam.get_mark_time(student_uid)
+    firstview = exam.get_student_start_time(student_uid)
+    submittime = exam.get_submit_time(student_uid)
 
     try:
-        datemarked = General.human_date(marktime)
+        datemarked = Util.human_date(marktime)
     except AttributeError:
         datemarked = None
     try:
-        datefirstview = General.human_date(firstview)
+        datefirstview = Util.human_date(firstview)
     except AttributeError:
         datefirstview = None
     try:
-        datesubmit = General.human_date(submittime)
+        datesubmit = Util.human_date(submittime)
     except AttributeError:
         datesubmit = None
 
@@ -428,11 +426,11 @@ def cadmin_exam_unsubmit(course_id, exam_id, student_uid):
     """
     course = Course.get(course_id)
     try:
-        exam = Exams.get_exam_struct(exam_id, course.id)
+        exam = Exam.get(exam_id)
     except KeyError:
         exam = {}
         abort(404)
-    Exams.unsubmit(exam_id, student_uid)
+    Exam.unsubmit(student_uid)
     user = User.get(student_uid)
     flash("""Assessment for %s unsubmitted and timer reset.""" % user.uname)
     return redirect(url_for("cadmin_exam_viewmarked",
@@ -449,20 +447,20 @@ def cadmin_edit_exam(course_id, exam_id):
     if not course:
         abort(404)
 
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    exam = Exam.get(exam_id)
     if not exam:
         abort(404)
 
-    if not int(exam['cid']) == int(course_id):
+    if not exam.course == course_id:
         flash("Assessment %s does not belong to this course." % int(exam_id))
         return redirect(url_for('cadmin_top', course_id=course_id))
 
-    exam['start_date'] = int(date_from_py2js(exam['start']))
-    exam['end_date'] = int(date_from_py2js(exam['end']))
-    exam['start_hour'] = int(exam['start'].hour)
-    exam['end_hour'] = int(exam['end'].hour)
-    exam['start_minute'] = int(exam['start'].minute)
-    exam['end_minute'] = int(exam['end'].minute)
+    exam.start_date = date_from_py2js(exam.start)
+    exam.end_date = date_from_py2js(exam.end)
+    exam.start_hour = exam.start.hour
+    exam.end_hour = exam.end.hour
+    exam.start_minute = exam.start.minute
+    exam.end_minute = exam.end.minute
 
     return render_template(
         "exam_edit.html",
@@ -487,7 +485,7 @@ def cadmin_edit_exam_submit(course_id, exam_id):
         return redirect(url_for('cadmin_top', course_id=course_id))
 
     exam_id = CourseAdmin.exam_edit_submit(request, user_id, course_id, exam_id)
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    exam = Exam.get(exam_id)
     flash("Assessment saved.")
     return render_template(
         "exam_edit_submit.html",
