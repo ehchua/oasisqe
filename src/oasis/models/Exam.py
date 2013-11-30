@@ -78,6 +78,10 @@ class Exam(db.Model):
 
         return newe
 
+    @staticmethod
+    def get(exam_id):
+        return Exam.query.filter_by(id=exam_id).first()
+
     def save_score(self, student, examtotal):
         """ Store the exam score.
             Currently puts it into the marklog.

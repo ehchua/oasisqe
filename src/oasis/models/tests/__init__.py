@@ -183,6 +183,23 @@ class TestApp(TestCase):
         topic2 = Topic.create(course1, "Topic 2", 1, position=4)
         topic3 = Topic.create(course2, "Topic 3", 1, position=5)
 
+        db.session.add(course1)
+        db.session.add(course2)
+        db.session.add(topic1)
+        db.session.add(topic2)
+        db.session.add(topic3)
+        db.session.commit()
+
         self.assertTrue(topic1.id)
         self.assertTrue(topic2.id)
         self.assertTrue(topic3.id)
+
+        self.assertEqual(topic1.course, course1.id)
+        self.assertEqual(topic2.course, course1.id)
+        self.assertEqual(topic3.course, course2.id)
+
+        tc1 = list(Topic.by_course(course1.id))
+        tc2 = list(Topic.by_course(course2.id))
+
+        self.assertListEqual(tc1, [topic1, topic2])
+        self.assertListEqual(tc2, [topic3,])

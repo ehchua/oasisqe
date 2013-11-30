@@ -56,7 +56,7 @@ class Topic(db.Model):
     def get(topic_id):
         """ Fetch by topic ID"""
         topic = Topic.query.filter_by(id=topic_id).first()
-        if topic.posision is None or topic.position is "None":
+        if topic.position is None or topic.position is "None":
             topic.position = 0
         return topic
 
@@ -97,7 +97,6 @@ class Topic(db.Model):
                                     'status': status}
         return qtemplates
 
-
     @staticmethod
     def create(course, name, visibility, position=0):
 
@@ -110,3 +109,10 @@ class Topic(db.Model):
         db.session.add(newt)
         db.session.commit()
         return newt
+
+    @staticmethod
+    def by_course(course):
+        """ Return a summary of information about all current topics in the course
+        """
+
+        return Topic.query.filter_by(course=course, archived=0).order_by("position")
