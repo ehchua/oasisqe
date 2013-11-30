@@ -769,31 +769,6 @@ def create_qt(owner, title, desc, marker, scoremax, status):
         (owner, title, desc, marker, scoremax, status))
 
 
-def _serialize_courseexaminfo(info):
-    """ Serialize the structure for, eg. cache.
-        The dates, especially, need work before JSON
-    """
-    FMT = '%Y-%m-%d %H:%M:%S'
-    safe = {}
-    for k, exam in info.iteritems():
-        safe[k] = exam
-        safe[k]['start'] = exam['start'].strftime(FMT)
-        safe[k]['end'] = exam['end'].strftime(FMT)
-    return json.dumps(safe)
-
-
-def _deserialize_courseexaminfo(obj):
-    """ Deserialize a serialized exam info structure."""
-    FMT = '%Y-%m-%d %H:%M:%S'
-    safe = json.loads(obj)
-    info = {}
-    for k, exam in safe.iteritems():
-        info[k] = exam
-        info[k]['start'] = datetime.datetime.strptime(exam['start'], FMT)
-        info[k]['end'] = datetime.datetime.strptime(exam['end'], FMT)
-    return info
-
-
 def get_student_q_practice_num(user_id, qt_id):
     """Return the number of times the given student has practiced the question
        Exclude assessed scores.
@@ -821,13 +796,6 @@ def get_student_q_practice_num(user_id, qt_id):
         return num
     else:
         return 0
-
-
-def secs_to_human(seconds):
-    """Convert a number of seconds to a human readable string, eg  "8 days"
-    """
-    perday = 86400
-    return "%d days ago" % int(seconds / perday)
 
 
 def get_prac_stats_user_qt(user_id, qt_id):

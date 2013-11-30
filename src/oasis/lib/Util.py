@@ -299,3 +299,10 @@ def is_past(date):
     if date < now:
         return True
     return False
+
+
+def secs_to_human(seconds):
+    """Convert a number of seconds to a human readable string, eg  "8 days"
+    """
+    perday = 86400
+    return "%d days ago" % int(seconds / perday)

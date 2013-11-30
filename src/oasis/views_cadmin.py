@@ -26,6 +26,7 @@ MYPATH = os.path.dirname(__file__)
 from oasis.lib.General import date_from_py2js
 from oasis.lib import External
 from oasis.models.Group import Group
+from oasis.models.Exam import Exam
 
 from oasis import app
 from .lib.Util import require_course_perm, require_perm
@@ -46,11 +47,10 @@ def cadmin_top(course_id):
     is_sysadmin = Permission.check_perm(user_id, -1, 'sysadmin')
 
     topics = course.topics()
-    exams = [Exams.get_exam_struct(exam_id, course_id)
-             for exam_id in Course.exams(prev_years=False)]
+    exams = list(Exam.by_course(course))
 
-    exams.sort(key=lambda y: y['start_epoch'], reverse=True)
-    groups = course.groups(course_id)
+    exams.sort(key=lambda y: y.start, reverse=True)
+    groups = course.groups()
     choosegroups = [group
                     for group in Group.all_groups()
                     if not group.id in groups]

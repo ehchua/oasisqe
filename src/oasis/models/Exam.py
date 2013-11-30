@@ -16,8 +16,6 @@ from oasis.lib.OaTypes import todatetime
 from oasis.lib import Util
 
 from oasis import db
-
-from oasis.models.Course import Course
 from oasis.models.Permission import Permission
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime
@@ -123,8 +121,6 @@ class Exam(db.Model):
         """ Return the time the student submitted an assessment
             Returns a datetime object or None
         """
-        assert isinstance(exam, int)
-        assert isinstance(student, int)
         ret = run_sql("""SELECT marktime
                          FROM questions
                          WHERE exam=%s
@@ -336,14 +332,14 @@ class Exam(db.Model):
         set_user_status(student, exam, 1)
         touchUserExam(exam, student)
 
-    def _serialize_examstruct(self):
+    def _serialize(self):
         """ Serialize the exam structure for, eg. cache.
             The dates, especially, need work before JSON
         """
-        FMT = '%Y-%m-%d %H:%M:%S'
-        safe = exam.copy()
-        safe['start'] = exam['start'].strftime(FMT)
-        safe['end'] = exam['end'].strftime(FMT)
+        fmt = '%Y-%m-%d %H:%M:%S'
+        safe = self.copy()
+        safe.start = self.start.strftime(fmt)
+        safe.end = self.end.strftime(fmt)
 
         return json.dumps(safe)
 
@@ -378,58 +374,9 @@ class Exam(db.Model):
     def recent(self):
         return Util.is_recent(self.end)
 
+    def can_preview(self, user_id):
+        return Permission.check_perm(user_id, self.course, "exampreview")
 
-    # TODO: Optimize. This is called quite a lot
-    def get_as_struct(self, user_id=None, include_qtemplates=False,
-                        include_stats=False):
-        """ Return a dictionary of useful data about the given exam for the user.
-            Including stats is a performance hit so don't unless you need them.
-        """
-
-        sql = """SELECT "title", "owner", "type", "start", "end",
-                        "description", "comments", "course", "archived",
-                        "duration", "markstatus", "instant", "code"
-                 FROM "exams" WHERE "exam" = %s LIMIT 1;"""
-        params = (exam_id, )
-        ret = run_sql(sql, params)
-        if not ret:
-            raise KeyError("Exam %s not found." % exam_id)
-        row = ret[0]
-        exam = {'id': exam_id,
-                'title': row[0],
-                'owner': row[1],
-                'type': row[2],
-                'start': row[3],
-                'end': row[4],
-                'instructions': row[5],
-                'comments': row[6],
-                'cid': row[7],
-                'archived': row[8],
-                'duration': row[9],
-                'markstatus': row[10],
-                'instant': row[11],
-                'code': row[12]
-        }
-
-        course = Course.get(exam['cid'])
-
-
-        exam['start_epoch'] = int(exam['start'].strftime("%s"))  # used to sort
-        exam['period'] = General.human_dates(exam['start'], exam['end'])
-        exam['course'] = course
-        exam['start_human'] = exam['start'].strftime("%a %d %b")
-
-        if include_qtemplates:
-            exam['qtemplates'] = get_qts(exam_id)
-            exam['num_questions'] = len(exam['qtemplates'])
-        if include_stats:
-            exam['coursedone'] = get_num_done(exam_id, exam['cid'])
-            exam['notcoursedone'] = get_num_done(exam_id), exam['coursedone']
-        if user_id:
-            exam['is_done'] = is_done_by(user_id, exam_id)
-            exam['can_preview'] = Permission.check_perm(user_id, exam['cid'], "exampreview")
-
-        return exam
 
     def get_marks(self, group):
         """ Fetch the marks for a given user group.
