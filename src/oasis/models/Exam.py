@@ -92,8 +92,7 @@ class Exam(db.Model):
                                      'student': student,
                                      'marker': 1,
                                      'operation': "Submitted",
-                                     'value': examtotal
-        })
+                                     'value': examtotal})
         self.touch_user_exam(student)
 
     @staticmethod

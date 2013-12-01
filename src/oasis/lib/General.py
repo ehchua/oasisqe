@@ -71,7 +71,7 @@ def get_q_list(tid, uid=None, numdone=True):
     """
     qlist = []
     topic = Topic.get(tid)
-    qtemplates = topic.get_qts()
+    qtemplates = topic.qtemplates()
     for qtid in qtemplates:
         if uid and numdone:
             num = DB.get_student_q_practice_num(uid, qtid)

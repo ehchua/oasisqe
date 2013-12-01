@@ -14,6 +14,7 @@ from logging import log, ERROR
 from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
+from oasis import db
 from oasis.lib import OaConfig, DB, \
     Setup, CourseAdmin, Util, Assess, Spreadsheets
 from oasis.models.User import User
@@ -484,8 +485,9 @@ def cadmin_edit_exam_submit(course_id, exam_id):
         flash("Assessment editing cancelled.")
         return redirect(url_for('cadmin_top', course_id=course_id))
 
-    exam_id = CourseAdmin.exam_edit_submit(request, user_id, course_id, exam_id)
-    exam = Exam.get(exam_id)
+    exam = CourseAdmin.exam_edit_submit(request, user_id, course_id, exam_id)
+    db.session.add(exam)
+    db.session.save()
     flash("Assessment saved.")
     return render_template(
         "exam_edit_submit.html",

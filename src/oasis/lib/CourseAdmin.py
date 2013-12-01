@@ -212,23 +212,24 @@ def exam_edit_submit(request, user_id, cid, exam_id):
                 qns[q].append(int(v[0]))
 
     if not exam_id:
-        exam_id = Exams.create(cid, user_id, title, atype, duration, astart,
-                               aend, instructions, code=code, instant=instant)
+        exam = Exam.create(cid, user_id, title, atype, duration, astart,
+                           aend, instructions, code=code, instant=instant)
     else:  # update
-        Exams.set_title(exam_id, title)
-        Exams.set_duration(exam_id, duration)
-        Exams.set_type(exam_id, atype)
-        Exams.set_description(exam_id, instructions)
-        Exams.set_start_time(exam_id, astart)
-        Exams.set_end_time(exam_id, aend)
-        Exams.set_code(exam_id, code)
-        Exams.set_instant(exam_id, instant)
+        exam = Exam.get(exam_id)
+        exam.title = title
+        exam.duration = duration
+        exam.type = atype
+        exam.instructions = instructions
+        exam.start = astart
+        exam.end = aend
+        exam.code = code
+        exam.instant = instant
 
     for pos, qts in qns.iteritems():
         if pos:
             DB.update_exam_qt_in_pos(exam_id, int(pos), qts)
 
-    return exam_id
+    return exam
 
 
 def _get_q_list_sorted(topic):
@@ -262,9 +263,8 @@ def get_create_exam_q_list(course_id):
     """
 
     course = Course.get(course_id)
-    topics = course.topics(archived=0)
-    for num, topic in topics.iteritems():
-        topic_id = topics[num]['id']
-        topics[num]['questions'] = _get_q_list_sorted(topic_id)
+    topics = list(course.topics(archived=0))
+    for topic in topics:
+        topic.questions = _get_q_list_sorted(topic.id)
     return topics
 
