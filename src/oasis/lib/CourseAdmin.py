@@ -17,12 +17,12 @@ from oasis.models.Course import Course
 from oasis.models.Topic import Topic
 from oasis.models.Exam import Exam
 
-def do_topic_update(course_id, request):
+
+def do_topic_update(course, request):
     """Read the submitted form and make relevant changes to Topic information
     """
     categories = []
     topics = []
-    course = Course.get(course_id)
     form = request.form
     if form:
         for i in form.keys():
@@ -44,15 +44,12 @@ def do_topic_update(course_id, request):
                 topic.position = i['position']
                 topic.title = i['name']
                 topic.visibility = i['visibility']
-                Course.incr_version()
             else:
                 if not i['name'] == "[Name of new topic]":
                     Topic.create(course.id,
                                   i['name'],
                                   int(i['visibility']),
                                   i['position'])
-                    Course.incr_version()
-
         return True
 
     return False

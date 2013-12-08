@@ -182,13 +182,14 @@ class TestApp(TestCase):
 
         course1 = Course.create("topiccourse", "Testing Topics 1", 0, 1)
         course2 = Course.create("topiccourse2", "Testing Topics 2", 0, 1)
-
-        topic1 = Topic.create(course1, "Topic 1", 1, position=3)
-        topic2 = Topic.create(course1, "Topic 2", 1, position=4)
-        topic3 = Topic.create(course2, "Topic 3", 1, position=5)
-
         db.session.add(course1)
         db.session.add(course2)
+        db.session.commit()
+
+        topic1 = Topic.create(course1.id, "Topic 1", 1, position=3)
+        topic2 = Topic.create(course1.id, "Topic 2", 1, position=4)
+        topic3 = Topic.create(course2.id, "Topic 3", 1, position=5)
+
         db.session.add(topic1)
         db.session.add(topic2)
         db.session.add(topic3)

@@ -28,6 +28,7 @@ from oasis.lib.Util import date_from_py2js
 from oasis.lib import External
 from oasis.models.Group import Group
 from oasis.models.Exam import Exam
+from oasis.models.QTemplate import QTemplate
 
 from oasis import app
 from .lib.Util import require_course_perm, require_perm
@@ -761,16 +762,13 @@ def cadmin_edit_topic(course_id, topic_id):
 
     course = Course.get(course_id)
     topic = Topic.get(topic_id)
-    questions = [question
-                 for question in topic.qtemplates()]
-    for question in questions:
-        question['embed_id'] = DB.get_qt_embedid(question['id'])
-        if question['embed_id']:
-            question['embed_url'] = "%s/embed/question/%s/question.html" % \
-                                    (OaConfig.parentURL, question['embed_id'])
+    qtemplates = [QTemplate.get(qtid) for qtid in topic.qtemplates()]
+    for qt in qtemplates:
+        if qt.embed_id:
+            qt.embed_url = "%s/embed/question/%s/question.html" % \
+                                    (OaConfig.parentURL, qt.embed_id)
         else:
-            question['embed_url'] = None
-        question['editor'] = DB.get_qt_editor(question['id'])
+            qt.embed_url = None
 
     all_courses = Course.all()
     all_courses = [crse
@@ -778,7 +776,7 @@ def cadmin_edit_topic(course_id, topic_id):
                    if Permission.satisfy_perms(user_id, int(crse.id),
                                    ("questionedit", "courseadmin",
                                     "sysadmin"))]
-    all_courses.sort(lambda f, s: cmp(f['name'], s['name']))
+    all_courses.sort(lambda f, s: cmp(f.name, s.name))
 
     all_course_topics = []
     for course in all_courses:
@@ -786,12 +784,12 @@ def cadmin_edit_topic(course_id, topic_id):
         if topics:
             all_course_topics.append({'course': course.name, 'topics': topics})
 
-    questions.sort(key=lambda k: k['position'])
+    qtemplates.sort(key=lambda k: k['position'])
     return render_template(
         "courseadmin_edittopic.html",
         course=course,
         topic=topic,
-        questions=questions,
+        questions=qtemplates,
         all_course_topics=all_course_topics
     )
 

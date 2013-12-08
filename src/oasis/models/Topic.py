@@ -98,10 +98,10 @@ class Topic(db.Model):
         return qtemplates
 
     @staticmethod
-    def create(course, name, visibility, position=0):
+    def create(course_id, name, visibility, position=0):
 
         newt = Topic()
-        newt.course = course.id
+        newt.course = course_id
         newt.name = name
         newt.visibility = visibility
         newt.position = position
