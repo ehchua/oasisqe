@@ -8,7 +8,7 @@
 # code from all over the place :)
 
 import datetime
-from oasis.lib import General
+from oasis.lib import Util, General
 
 
 def test_instance_generate_simple_answer():
@@ -177,9 +177,9 @@ def test_date_ops():
     c = datetime.date(2013, 11, 1)
     d = datetime.date(2012, 11, 1)
 
-    assert General.is_between(a, c, b) is True
-    assert General.is_between(a, b, c) is True
-    assert General.is_between(a, c, d) is False
+    assert Util.is_between(a, c, b) is True
+    assert Util.is_between(a, b, c) is True
+    assert Util.is_between(a, c, d) is False
 
 
 

@@ -16,8 +16,6 @@ from StringIO import StringIO
 import math
 import sys
 import traceback
-import datetime
-import time
 import jinja2
 
 from logging import log, INFO, WARN, ERROR

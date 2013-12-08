@@ -3,7 +3,7 @@
 # This code is under the GNU Affero General Public License
 # http://www.gnu.org/licenses/agpl-3.0.html
 
-from logging import log, INFO, WARN
+# from logging import log, INFO, WARN
 from sqlalchemy import Column, Integer, String, DateTime
 from oasis import db
 

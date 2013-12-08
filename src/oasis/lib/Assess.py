@@ -13,6 +13,7 @@ from logging import log, INFO, ERROR, WARN
 from oasis.lib import DB, General
 from oasis.models.Course import Course
 from oasis.models.Exam import Exam
+from oasis.models.Question import Question
 
 DATEFORMAT = "%d %b %H:%M"
 
@@ -21,15 +22,17 @@ def mark_exam(user_id, exam_id):
     """ Submit the assessment and mark it.
         Returns True if it went well, or False if a problem.
     """
-    numQuestions = Exams.get_num_questions(exam_id)
-    status = Exams.get_user_status(user_id, exam_id)
+    exam = Exam.get(exam_id)
+    uexam = exam.by_student(user_id)
+    numQuestions = exam.get_num_questions()
+    status = exam.get_user_status(user_id)
     log(INFO,
         "Marking assessment %s for %s, status is %s" %
         (exam_id, user_id, status))
     examtotal = 0.0
     for position in range(1, numQuestions + 1):
         q_id = General.get_exam_q(exam_id, position, user_id)
-        answers = DB.get_q_guesses(q_id)
+        answers = Question.get_q_guesses(q_id)
         # There's a small chance they got here without ever seeing a question,
         # make sure it exists.
         DB.add_exam_q(user_id, exam_id, q_id, position)
@@ -60,10 +63,10 @@ def mark_exam(user_id, exam_id):
             DB.update_q_score(q_id, total)
         examtotal += total
 
-    Exams.set_user_status(user_id, exam_id, 5)
-    Exams.set_submit_time(user_id, exam_id)
-    Exams.save_score(exam_id, user_id, examtotal)
-    Exams.touchUserExam(exam_id, user_id)
+    exam.set_user_status(user_id, exam_id, 5)
+    exam.set_submit_time(user_id, exam_id)
+    exam.save_score(exam_id, user_id, examtotal)
+    exam.touchUserExam(exam_id, user_id)
 
     log(INFO,
         "user %s scored %s total on exam %s" %
@@ -79,7 +82,8 @@ def student_exam_duration(student, exam_id):
 
     firstview = None
 
-    examsubmit = Exams.get_submit_time(exam_id, student)
+    exam = Exam.get(exam_id)
+    examsubmit = exam.get_submit_time(student)
     questions = General.get_exam_qs(student, exam_id)
 
     # we're working out the first time the assessment was viewed is the

@@ -14,12 +14,12 @@ def exam_results_as_spreadsheet(course_id, group, exam_id):
     """ Export the assessment results as a XLSX spreadsheet """
 
     course = Course.get(course_id)
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    exam = Exam.get(exam_id)
 
     uids = set([])
     totals = {}
 
-    results = Exams.get_marks(group, exam_id)
+    results = exam.get_marks(group)
     for user_id in results:
         uids.add(user_id)
         if not user_id in totals:
@@ -27,7 +27,7 @@ def exam_results_as_spreadsheet(course_id, group, exam_id):
         for qt, val in results[user_id].iteritems():
             totals[user_id] += val['score']
 
-    questions = Exams.get_qts_list(exam_id)
+    questions = exam.get_qts_list()
     users = {}
     for uid in uids:
         users[uid] = User.get(uid)
