@@ -14,6 +14,8 @@ MYPATH = os.path.dirname(__file__)
 
 from oasis import app
 from oasis.models.User import User
+from oasis.models.Question import Question
+from oasis.models.QTemplate import QTemplate
 
 
 @app.route("/embed/question/<embed_id>/question.html")
@@ -32,25 +34,26 @@ def embed_question(embed_id):
     if len(embed_id) < 1:
         abort(404)
     try:
-        qt_id = DB.get_qt_by_embedid(embed_id)
+        qt = QTemplate.get_by_embedid(embed_id)
     except KeyError:
-        qt_id = None
+        qt = None
         abort(404)
 
-    title = request.args.get('title', DB.get_qt_name(qt_id))
+    title = request.args.get('title', qt.name)
     title = ''.join([t for t in title
                      if t in valid])
 
-    q_id = Practice.get_practice_q(qt_id, user.id)
-    vers = DB.get_q_version(q_id)
-    if not vers >= DB.get_qt_version(qt_id):
-        q_id = General.gen_q(qt_id, user.id)
+    q_id = Practice.get_practice_q(qt.id, user.id)
+    q = Question.get(q_id)
+    vers = q.version
+    if not vers >= DB.get_qt_version(qt.id):
+        q_id = General.gen_q(qt.id, user.id)
 
     q_body = General.render_q_html(q_id)
     return render_template(
         "embeddoquestion.html",
         q_body=q_body,
-        embed_id=DB.get_qt_embedid(qt_id),
+        embed_id=qt.embed_id,
         title=title,
         qid=q_id,
     )

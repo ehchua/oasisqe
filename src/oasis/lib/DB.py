@@ -12,6 +12,7 @@
 
 from logging import log, INFO, WARN, ERROR
 
+import psycopg2
 
 # Global dbpool
 import OaConfig

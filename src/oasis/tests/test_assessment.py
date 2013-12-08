@@ -8,15 +8,9 @@ import datetime
 from oasis import app, db
 
 from oasis.models.User import User
-from oasis.models.Feed import Feed
 from oasis.models.Course import Course
 from oasis.models.Group import Group
-from oasis.models.Message import Message
-from oasis.models.Period import Period
-from oasis.models.Topic import Topic
-from oasis.models.UFeed import UFeed
 from oasis.models.Exam import Exam
-from oasis.models.Permission import Permission
 from oasis.models.QTemplate import QTemplate
 
 

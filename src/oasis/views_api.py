@@ -35,14 +35,14 @@ def api_exam_qtemplates(course_id, exam_id):
     if exam_id == 0:   # New assessment may be being created
         return jsonify(result=[[{'qtid': 0}, ], ])
 
-    exam = Exams.get_exam_struct(exam_id)
-    ecid = exam['cid']
+    exam = Exam.get(exam_id)
+    ecid = exam.course
     if not ecid == course_id:   # They may be trying to bypass permission check
         abort(401)
 
     qtemplates = []
     try:
-        qtemplates = Exams.get_qts_list(exam_id)
+        qtemplates = exam.get_qts_list(exam_id)
     except KeyError:
         abort(401)
 

@@ -134,11 +134,12 @@ def assess_assessmentpage(course_id, exam_id, page):
     """ Display a page of the assessment and allow the user to fill in answers.
     """
     user_id = session['user_id']
-
-    status = Exams.get_user_status(user_id, exam_id)
+    exam = Exam.get(exam_id)
+    uexam = exam.by_student(user_id)
+    status = uexam.status
     if status == 1:  # if it's not started, mark it as started
-        Exams.set_user_status(user_id, exam_id, 2)
-        Exams.touchUserExam(exam_id, user_id)
+        exam.set_user_status(user_id, 2)
+        exam.touchUserExam(user_id)
 
     form = request.form
     for field in form.keys():
@@ -147,7 +148,7 @@ def assess_assessmentpage(course_id, exam_id, page):
             q_id = int(qinfo.groups()[0])
             part = int(qinfo.groups()[1])
             value = form[field]
-            timeremain = Exams.get_end_time(exam_id, user_id) - time.time()
+            timeremain = uexam.get_end_time(exam_id, user_id) - time.time()
             if timeremain < -30:
                 flash("Time Exceeded, automatically submitting...")
                 return redirect(url_for("assess_submit",
@@ -155,11 +156,11 @@ def assess_assessmentpage(course_id, exam_id, page):
                                         exam_id=exam_id))
 
             if status < 6:
-                DB.save_guess(q_id, part, value)
+                uexam.save_guess(q_id, part, value)
         else:
             pass
 
-    Exams.touchUserExam(exam_id, user_id)
+    exam.touchUserExam(user_id)
 
     if "submit" in form:
         return redirect(url_for("assess_submit",
@@ -182,8 +183,8 @@ def assess_assessmentpage(course_id, exam_id, page):
         page = int(goto.split(' ', 2)[1])
 
     q_id = General.get_exam_q(exam_id, page, user_id)
-    timeleft = Exams.get_end_time(exam_id, user_id) - time.time()
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    timeleft = uexam.get_end_time(exam_id, user_id) - time.time()
+    exam = Exam.get(exam_id)
 
     if 'code' in session:
         ucode = session['code']
@@ -196,7 +197,7 @@ def assess_assessmentpage(course_id, exam_id, page):
                                 exam_id=exam_id))
 
     course = Course.get(course_id)
-    if Exams.is_done_by(user_id, exam_id):
+    if exam.is_done_by(user_id):
         exam['is_done'] = True
         html = General.render_q_html(q_id, readonly=True)
     else:
@@ -206,7 +207,7 @@ def assess_assessmentpage(course_id, exam_id, page):
         is_timed = 1
     else:
         is_timed = 0
-    numquestions = Exams.get_num_questions(exam_id)
+    numquestions = exam.get_num_questions(exam_id)
     return render_template(
         "assess_page.html",
         exam=exam,

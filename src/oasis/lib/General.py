@@ -20,10 +20,12 @@ import jinja2
 
 from logging import log, INFO, WARN, ERROR
 from oasis.lib.OaExceptions import OaMarkerError
-from oasis.lib import OaConfig, DB, script_funcs, OqeSmartmarkFuncs
+from oasis.lib import OaConfig, script_funcs, OqeSmartmarkFuncs
 from oasis.models.Course import Course
 from oasis.models.Topic import Topic
 from oasis.models.Exam import Exam
+from oasis.models.Question import Question
+from oasis.models.QTemplate import QTemplate
 
 
 def htmlesc(text):
@@ -88,26 +90,23 @@ def get_q_att_fname(qid, name):
     """ Return (mimetype, filename) with the relevant filename.
         If it's not found in question, look in questiontemplate.
     """
-    qtid = DB.get_q_parent(qid)
-    variation = DB.get_q_variation(qid)
-    version = DB.get_q_version(qid)
-    # for the two biggies we hit the question first,
-    # otherwise check the question template first
-    if name == "image.gif" or name == "qtemplate.html":
+    q = Question.get(qid)
+    qt = QTemplate.get(q.qtemplate)
 
-        fname = DB.get_q_att_fname(qtid, name, variation, version)
-        if fname:
-            return DB.get_q_att_mimetype(qtid, name, variation, version), fname
-        fname = DB.get_qt_att_fname(qtid, name, version)
-        if fname:
-            return DB.get_qt_att_mimetype(qtid, name, version), fname
-    else:
-        fname = DB.get_qt_att_fname(qtid, name, version)
-        if fname:
-            return DB.get_qt_att_mimetype(qtid, name, version), fname
-        fname = DB.get_q_att_fname(qtid, name, variation, version)
-        if fname:
-            return DB.get_q_att_mimetype(qtid, name, variation, version), fname
+    variation = q.variation
+    version = q.version
+
+    # Try Question
+    data = q.get_q_att(name, variation, version)
+    if data:
+        return q.get_q_att_mimetype(name, variation, version), name
+
+    # Nope, try parent QTemplate
+    data = qt.get_qt_att(qt.id, name, version)
+    if data:
+        return qt.get_qt_att_mimetype(qt.id, name, version), name
+
+    # TODO: check Topic?
     return None, None
 
 
@@ -115,25 +114,22 @@ def get_q_att(qid, name):
     """ Return (mimetype, data) with the relevant attachment.
         If it's not found in question, look in questiontemplate.
     """
-    qtid = DB.get_q_parent(qid)
-    variation = DB.get_q_variation(qid)
-    version = DB.get_q_version(qid)
-    # for the two biggies we hit the question first,
-    # otherwise check the question template first
-    if name == "image.gif" or name == "qtemplate.html":
-        data = DB.get_q_att(qtid, name, variation, version)
-        if data:
-            return DB.get_q_att_mimetype(qtid, name, variation, version), data
-        data = DB.get_qt_att(qtid, name, version)
-        if data:
-            return DB.get_qt_att_mimetype(qtid, name, version), data
-    else:
-        data = DB.get_qt_att(qtid, name, version)
-        if data:
-            return DB.get_qt_att_mimetype(qtid, name, version), data
-        data = DB.get_q_att(qtid, name, variation, version)
-        if data:
-            return DB.get_q_att_mimetype(qtid, name, variation, version), data
+    q = Question.get(qid)
+    qt = QTemplate.get(q.qtemplate)
+    variation = q.variation
+    version = q.version
+
+    # Try Question
+    data = q.get_q_att(name, variation, version)
+    if data:
+        return q.get_q_att_mimetype(name, variation, version), data
+
+    # Nope, try parent QTemplate
+    data = qt.get_qt_att(qt.id, name, version)
+    if data:
+        return qt.get_qt_att_mimetype(qt.id, name, version), data
+
+    # TODO: check Topic?
     return None, None
 
 
@@ -883,24 +879,27 @@ def mark_q(qid, answers):
         input:    {"A1":"0.345", "A2":"fred", "A3":"-26" }
         return:   {"M1": Mark One, "C1": Comment One, "M2": Mark Two..... }
     """
-    qtid = DB.get_q_parent(qid)
-    version = DB.get_q_version(qid)
-    variation = DB.get_q_variation(qid)
-    qvars = DB.get_qt_variation(qtid, variation, version)
+    q = Question.get(qid)
+    qtid = q.qtemplate
+    qt = QTemplate.get(qtid)
+
+    version = q.version
+    variation = q.variation
+    qvars = qt.get_variation(variation, version)
     if not qvars:
         qvars = {}
         log(WARN,
             "markQuestion(%s, %s) unable to retrieve variables." %
             (qid, answers))
     qvars['OaQID'] = int(qid)
-    marktype = DB.get_qt_marker(qtid)
+    marktype = qt.marker
     if marktype == 1:    # standard
         marks = mark_q_standard(qvars, answers)
     else:
         # We want the latest version of the marker, so no version given
-        markerscript = DB.get_qt_att(qtid, "__marker.py")
+        markerscript = qt.get_qt_att(qtid, "__marker.py")
         if not markerscript:
-            markerscript = DB.get_qt_att(qtid, "marker.py")
+            markerscript = qt.get_qt_att(qtid, "marker.py")
             log(INFO,
                 "'marker.py' should now be called '__marker.py' (qtid=%s)" % qtid)
         if not markerscript:

@@ -19,10 +19,12 @@ from oasis.lib.Audit import audit, get_records_by_user
 
 from oasis import app, db
 from .lib.Util import authenticated
+from .lib import Util
 
 from oasis.models.User import User
 from oasis.models.Permission import Permission
 from oasis.models.Course import Course
+from oasis.models.Exam import Exam
 
 @app.route("/setup/top")
 @authenticated
@@ -171,7 +173,7 @@ def setup_useraudit(audit_id):
     user = User.get(audit_id)
     audits = get_records_by_user(audit_id)
     for aud in audits:
-        aud['humantime'] = General.human_date(aud['time'])
+        aud['humantime'] = Util.human_date(aud['time'])
     return render_template(
         'setup_useraudit.html',
         user=user,
@@ -192,14 +194,14 @@ def setup_usersummary(view_id):
     is_sysadmin = Permission.check_perm(user_id, -1, 'sysadmin')
 
     user = User.get(view_id)
-    examids = Exams.get_exams_done(view_id)
+    examids = Exam.get_exams_done(view_id)
     exams = []
     for examid in examids:
-        exam = Exams.get_exam_struct(examid)
-        started = General.human_date(exam['start'])
-        exam['started'] = started
+        exam = Exam.get(examid)
+        started = Util.human_date(exam.start)
+        exam.started = started
 
-        exam['viewable'] = Permission.satisfy_perms(user.id, exam['cid'], ("viewmarks", ))
+        exam.viewable = Permission.satisfy_perms(user.id, exam.course, ("viewmarks", ))
 
         exams.append(exam)
     exams.sort(key=lambda x: x['start_epoch'], reverse=True)

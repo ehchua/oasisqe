@@ -653,11 +653,11 @@ def admin_course_save(course_id):
             course.add_group(newgroup)
             changed = True
             group = Group.get(newgroup)
+            db.session.add(group)
             flash("Group %s added." % group.name)
 
     if changed:
         db.session.add(course)
-        db.session.add(group)
         db.commit()
         flash("Course changes saved!")
         return redirect(url_for("admin_course", course_id=course_id))

@@ -6,9 +6,10 @@
 """ A collection of functions that may be called by
     scripts. eg. the __marker.py and __results.py scripts.
 """
-import DB
-from Audit import audit
 
+from Audit import audit
+from oasis.models.Question import Question
+from oasis.models.QTemplate import QTemplate
 
 # We dont want the scripts playing with their questionID (qid) so we have to
 # wrap all the functions that need it as an argument.
@@ -69,9 +70,7 @@ def q_log(qid, priority, facility, mesg):
     """function for question scripts (marker, render, generator, etc) to
        use to log messages. """
     qid = int(qid)
-    version = DB.get_q_version(qid)
-    variation = DB.get_q_variation(qid)
-    qtid = DB.get_q_parent(qid)
-    owner = DB.get_qt_owner(qtid)
-    audit(3, owner, qtid, "qlogger", "version=%s,variation=%s,priority=%s,facility=%s,message=%s" % (version, variation, priority, facility, mesg))
+    q = Question.get(qid)
+    qt = QTemplate.get(q.qtemplate)
+    audit(3, qt.owner, qt.id, "qlogger", "version=%s,variation=%s,priority=%s,facility=%s,message=%s" % (q.version, q.variation, priority, facility, mesg))
 

@@ -15,6 +15,8 @@ MYPATH = os.path.dirname(__file__)
 from oasis.models.Permission import Permission
 from oasis.models.Topic import Topic
 from oasis.models.Course import Course
+from oasis.models.Question import Question
+from oasis.models.QTemplate import QTemplate
 
 from oasis import app
 from .lib.Util import authenticated
@@ -212,37 +214,36 @@ def practice_mark_question(topic_id, question_id):
     user_id = session['user_id']
     topic = Topic.get(topic_id)
     course = Course(topic.course)
+    q = Question.get(question_id)
 
-    qt_id = DB.get_q_parent(question_id)
-
-    q_title = DB.get_qt_name(qt_id)
+    qt = QTemplate.get(q.qtemplate)
     questions = Practice.get_sorted_questions(course.id, topic_id, user_id)
-    q_pos = DB.get_qtemplate_topic_pos(qt_id, topic_id)
+    q_pos = DB.get_qtemplate_topic_pos(qt.id, topic_id)
 
-    blocked = Practice.is_q_blocked(user_id, course.id, topic_id, qt_id)
+    blocked = Practice.is_q_blocked(user_id, course.id, topic_id, qt.id)
     if blocked:
         return render_template(
             "practicequestionblocked.html",
             mesg=blocked,
             topictitle=topic.title,
             topic_id=topic_id,
-            qt_id=qt_id,
+            qt_id=qt.id,
             course=course,
-            q_title=q_title,
+            q_title=q.title,
             questions=questions,
             q_pos=q_pos,
         )
 
     marking = Practice.mark_q(user_id, topic_id, question_id, request)
-    prev_id, next_id = Practice.get_next_prev(qt_id, topic_id)
+    prev_id, next_id = Practice.get_next_prev(qt.id, topic_id)
 
     return render_template(
         "practicemarkquestion.html",
         topictitle=topic.title,
-        topic_id=topic_id,
-        qt_id=qt_id,
+        topic_id=topic.id,
+        qt_id=qt.id,
         course=course,
-        q_title=q_title,
+        q_title=q.title,
         questions=questions,
         q_pos=q_pos,
         q_id=question_id,

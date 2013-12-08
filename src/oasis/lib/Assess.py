@@ -14,6 +14,7 @@ from oasis.lib import DB, General
 from oasis.models.Course import Course
 from oasis.models.Exam import Exam
 from oasis.models.Question import Question
+from oasis.models.QTemplate import QTemplate
 
 DATEFORMAT = "%d %b %H:%M"
 
@@ -128,12 +129,13 @@ def render_own_marked_exam(student, exam):
                 'marking': {}
         },], False
     examtotal = 0.0
-    for question in questions:
-        qtemplate = DB.get_q_parent(question)
+    for q_id in questions:
+        q = Question.get(q_id)
+        qt = QTemplate.get(q.qtemplate)
 
-        answers = DB.get_q_guesses_before_time(question, examsubmit)
-        pos = DB.get_qt_exam_pos(exam, qtemplate)
-        marks = General.mark_q(question, answers)
+        answers = DB.get_q_guesses_before_time(q_id, examsubmit)
+        pos = DB.get_qt_exam_pos(exam, qt.id)
+        marks = General.mark_q(q_id, answers)
         parts = [int(var[1:])
                  for var in marks.keys()
                  if re.search("^A([0-9]+$)", var) > 0]
@@ -158,7 +160,7 @@ def render_own_marked_exam(student, exam):
                 'comment': comment
             })
 
-        html = General.render_q_html(question)
+        html = General.render_q_html(q_id)
         results.append({
             'pos': pos,
             'html': html,

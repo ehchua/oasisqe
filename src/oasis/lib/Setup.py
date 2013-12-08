@@ -9,12 +9,12 @@
 
 from flask import flash
 from logging import log, ERROR
-from oasis.lib import DB
+from oasis import db
 import StringIO
 from oasis.lib import External
-from oasis.models.Course import Course
 from oasis.models.Topic import Topic
 from flask import send_file, abort
+from oasis.models.QTemplate import QTemplate
 
 
 def doTopicPageCommands(request, topic_id, user_id):
@@ -51,9 +51,11 @@ def doTopicPageCommands(request, topic_id, user_id):
     # Now run them:
     # Titles first
     for command in [cmd for cmd in cmdlist if cmd['cmd'] == 'name']:
-        qid = int(command['data'])
+        qtid = int(command['data'])
+        qt = QTemplate.get(qtid)
         title = command['value']
-        DB.update_qt_title(qid, title)
+        qt.title = title
+        db.session.add(qt)
 
     # Then positions
     for command in [cmd for cmd in cmdlist if cmd['cmd'] == 'position']:
@@ -76,16 +78,16 @@ def doTopicPageCommands(request, topic_id, user_id):
         if target_cmd == 'move':
             if target_topic:
                 for qtid in qtids:
-                    qt_title = DB.get_qt_name(qtid)
-                    topic_title = target_topic.name
-                    flash("Moving %s to %s" % (qt_title, topic_title))
+                    qt = QTemplate.get(qtid)
+                    topic = Topic.get(target_topic)
+                    flash("Moving %s to %s" % (qt.title, topic.title))
                     DB.move_qt_to_topic(qtid, target_topic)
         if target_cmd == 'copy':
             if target_topic:
                 for qtid in qtids:
-                    qt_title = DB.get_qt_name(qtid)
-                    topic_title = target_topic.name
-                    flash("Copying %s to %s" % (qt_title, topic_title))
+                    qt = QTemplate.get(qtid)
+                    topic = Topic.get(target_topic)
+                    flash("Copying %s to %s" % (qt.title, topic.title))
                     newid = DB.copy_qt_all(qtid)
                     DB.add_qt_to_topic(newid, target_topic)
 

@@ -431,7 +431,7 @@ def cadmin_exam_unsubmit(course_id, exam_id, student_uid):
     except KeyError:
         exam = {}
         abort(404)
-    Exam.unsubmit(student_uid)
+    exam.unsubmit(student_uid)
     user = User.get(student_uid)
     flash("""Assessment for %s unsubmitted and timer reset.""" % user.uname)
     return redirect(url_for("cadmin_exam_viewmarked",

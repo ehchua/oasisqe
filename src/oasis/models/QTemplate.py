@@ -10,7 +10,7 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from oasis import db
 from logging import log, INFO, WARN, ERROR
-
+import cPickle
 
 class QTemplate(db.Model):
 
@@ -347,19 +347,6 @@ def get_qt_num_variations(qt_id, version=1000000000):
             (qt_id, version, err))
         return 0
     return num
-
-
-def create_qt_att(qt_id, name, mimetype, data, version):
-    """ Create a new Question Template Attachment using given data."""
-    if not data:
-        data = ""
-    if isinstance(data, unicode):
-        data = data.encode("utf8")
-    safedata = psycopg2.Binary(data)
-    run_sql("""INSERT INTO qtattach (qtemplate, mimetype, name, data, version)
-               VALUES (%s, %s, %s, %s, %s);""",
-               (qt_id, mimetype, name, safedata, version))
-    return None
 
 
 def update_qt_pos(qt_id, topic_id, position):

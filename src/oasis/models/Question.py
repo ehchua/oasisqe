@@ -7,9 +7,11 @@
     Handle Question (instance) related operations.
 """
 
+from logging import log, ERROR, INFO, WARN
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from oasis import db
-from oasis.models.QTemplate import QTemplate
+# from oasis.models.QTemplate import QTemplate
+from oasis.lib import Util
 
 
 class Question(db.Model):
@@ -42,7 +44,6 @@ class Question(db.Model):
     version = Column(Integer)
     exam = Column(Integer, default=0)
 
-
     @property
     def firstview_string(self):
         return self.firstview.strftime("%Y %b %d, %I:%M%P")
@@ -63,35 +64,21 @@ class Question(db.Model):
             return int(ret[0][0])
         return False
 
-
-    def update_q_score(q_id, score):
-        """ Set the score of a question. """
-
-        # TODO: some kind of audit?
-
-        try:
-            sc = float(score)
-        except (TypeError, ValueError):
-            log(ERROR, "Unable to cast score to float!? '%s'" % score)
-            return
-        run_sql("""UPDATE questions SET score=%s WHERE question=%s;""",
-                ("%.1f" % sc, q_id))
-
+    @staticmethod
     def create_q(qt_id, name, student, status, variation, version, exam):
         """ Add a question (instance) to the database."""
-        conn = dbpool.begin()
+
         conn.run_sql("""INSERT INTO questions (qtemplate, name, student, status, variation, version, exam)
                    VALUES (%s, %s, %s, %s, %s, %s, %s);""",
                      (qt_id, name, student, status, variation, version, exam ))
         res = conn.run_sql("SELECT currval('questions_question_seq')")
-        dbpool.commit(conn)
+
         if not res:
             log(ERROR,
                 "CreateQuestion(%d, %s, %d, %s, %d, %d, %d) may have failed." % (
                     qt_id, name, student, status, variation, version, exam))
             return None
         return res[0][0]
-
 
 
     def get_student_q_practice_num(user_id, qt_id):
@@ -122,10 +109,7 @@ class Question(db.Model):
         else:
             return 0
 
-
-
-
-    def get_student_q_practice_stats(user_id, qt_id, num=3):
+    def get_student_q_practice_stats(self, user_id, qt_id, num=3):
         """Return data on the scores obtained while practicing the given question
            the last 'num' times. Exclude assessed scores. If num is not provided,
            defaults to 3. If num is 0, give stats for all.
@@ -161,7 +145,7 @@ class Question(db.Model):
                     if age > 63000000:    # more than two years
                         age = "more than 2 years"
                     else:
-                        age = secs_to_human(age)
+                        age = Util.secs_to_human(age)
                 except (TypeError, ValueError):
                     age = "more than 2 years"
                 stats.append({
@@ -175,7 +159,7 @@ class Question(db.Model):
         return None
 
 
-    def get_q_stats_class(course, qt_id):
+    def get_q_stats_class(self, course, qt_id):
         """Fetch a bunch of statistics about the given question for the class
         """
         sql = """SELECT COUNT(question),

@@ -121,7 +121,7 @@ class Exam(db.Model):
             a datetime object or None
         """
         ret = run_sql("""SELECT firstview FROM questions
-                        WHERE exam=%s AND student=%s ORDER BY firstview ASC LIMIT 1;""", (exam, student))
+                        WHERE exam=%s AND student=%s ORDER BY firstview ASC LIMIT 1;""", (self.id, student))
         if ret:
             firstview = ret[0][0]
             if firstview:
@@ -137,7 +137,7 @@ class Exam(db.Model):
                          WHERE exam=%s
                            AND student=%s
                          ORDER BY marktime DESC
-                         LIMIT 1;""", (exam, student))
+                         LIMIT 1;""", (self.id, student))
         if ret:
             lastview = ret[0][0]
             if lastview:
@@ -212,7 +212,7 @@ class Exam(db.Model):
 
     def get_num_questions(self):
         """ Return the number of questions in the exam."""
-        ret = run_sql("""SELECT position FROM examqtemplates WHERE exam=%s GROUP BY position;""", (exam_id,))
+        ret = run_sql("""SELECT position FROM examqtemplates WHERE exam=%s GROUP BY position;""", (exam.id,))
         if ret:
             return len(ret)
         log(ERROR, "Request for unknown exam %s" % exam_id)
