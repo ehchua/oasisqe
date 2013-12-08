@@ -70,8 +70,8 @@ class TestAssessment(TestCase):
         ue2 = exam2.by_student(u.id)
         ue3 = exam1.by_student(u.id)
 
-        self.assertEqual(ue1.exam_id, exam1.id)
-        self.assertEqual(ue2.user_id, u.id)
+        self.assertEqual(ue1.exam, exam1.id)
+        self.assertEqual(ue2.student, u.id)
         self.assertEqual(ue1, ue3)
         self.assertNotEqual(ue2, ue3)
 

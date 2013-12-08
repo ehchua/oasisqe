@@ -18,7 +18,8 @@ from oasis.lib import Util
 from oasis import db
 from oasis.models.Permission import Permission
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy import DateTime, Float
 
 
 class Exam(db.Model):
@@ -108,6 +109,13 @@ class Exam(db.Model):
 
         return Exam.query.filter(Exam.end >= thisyear).filter_by(course=course.id, archived=0).order_by("start")
 
+    def by_student(self, user_id):
+        """ Return a userexam object for the user for this exam. Create a new one
+            if one doesn't exist.
+        """
+        # Will return existing if it exists
+        return UserExam.create(self.id, user_id)
+
     def get_student_start_time(self, student):
         """ Return the time the student started an assessment as
             a datetime object or None
@@ -188,13 +196,6 @@ class Exam(db.Model):
         if not newstatus == status:
             log(ERROR, "Failed to set new status:  setUserStatus(%s, %s, %s)" % (student, exam, status))
         touchUserExam(exam, student)
-
-    def create_user_exam(self, student):
-        """ Create a new instance of an exam for a student."""
-        status = get_user_status(student, exam)
-        if status == -1:
-            run_sql("""INSERT INTO userexams (exam, student, status, score)
-                        VALUES (%s, %s, '1', '-1'); """, (exam, student))
 
     def get_end_time(self, user):
         """ Return the time that an exam ends for the given user. """
@@ -557,13 +558,54 @@ class _Marklog(db.Model):
     marker = Column(Integer, ForeignKey("users.id"))
     operation = Column(String(255))
     value = Column(String(64))
-#
-#
-#class _UserExam(db.Model):
-#    __tablename__ = "userexams"
-#    pass
-#
-#
+
+
+class UserExam(db.Model):
+    __tablename__ = "userexams"
+
+# CREATE TABLE userexams (
+#     "id" SERIAL PRIMARY KEY,
+#     "exam" integer REFERENCES exams("exam") NOT NULL,
+#     "student" integer REFERENCES "users"("id"),
+#     "status" integer,
+#     "timeremain" integer,
+#     "submittime" timestamp,
+#     "score" real,
+#     "lastchange" timestamp
+# );
+
+    id = Column(Integer, primary_key=True)
+    exam = Column(Integer, ForeignKey("exams.exam"))
+    student = Column(Integer, ForeignKey("users.id"))
+    status = Column(Integer, default=0)
+    timeremain = Column(Integer)
+    submittime = Column(DateTime)
+    score = Column(Float, default=0)
+    lastchange = Column(DateTime)
+
+    @staticmethod
+    def create(exam_id, user_id):
+
+        ue = UserExam.get(exam_id, user_id)
+        if ue:
+            return ue
+
+        newue = UserExam()
+        newue.exam = exam_id
+        newue.student = user_id
+        newue.status = 1
+        newue.score = -1
+
+        db.session.add(newue)
+        db.session.commit()
+
+        return newue
+
+    @staticmethod
+    def get(exam_id, user_id):
+        return UserExam.query.filter_by(exam=exam_id).filter_by(student=user_id).first()
+
+
 #class _ExamTimer(db.Model):
 #    __tablename__ = "examtimers"
 ##

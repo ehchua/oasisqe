@@ -5,7 +5,6 @@ from unittest import TestCase
 import os
 import datetime
 
-from oasis import app, db
 
 from oasis.models.User import User
 from oasis.models.Feed import Feed
@@ -20,6 +19,8 @@ from oasis.models.Permission import Permission
 from oasis.models.QTemplate import QTemplate
 
 
+from oasis import app, db
+
 class TestApp(TestCase):
 
     def setUp(self):
@@ -29,10 +30,12 @@ class TestApp(TestCase):
         self.app = app.test_client()
         db.create_all()
 
+
     def tearDown(self):
 
         db.drop_all()
         db.session.remove()
+
 
     def test_user_obj(self):
 
