@@ -17,6 +17,7 @@ from oasis.models.Topic import Topic
 from oasis.models.UFeed import UFeed
 from oasis.models.Exam import Exam
 from oasis.models.Permission import Permission
+from oasis.models.QTemplate import QTemplate
 
 
 class TestApp(TestCase):
@@ -203,3 +204,42 @@ class TestApp(TestCase):
 
         self.assertListEqual(tc1, [topic1, topic2])
         self.assertListEqual(tc2, [topic3,])
+
+    def test_qtemplate_create(self):
+
+        u = User.create(uname="test01",
+                        passwd="",
+                        email="testemail1",
+                        acctstatus=0,
+                        givenname="Test",
+                        familyname="Account",
+                        source="",
+                        student_id='0000004',
+                        expiry=None,
+                        confirmation_code="",
+                        confirmed=False
+        )
+        db.session.add(u)
+        db.session.commit()
+
+        self.assertTrue(u)
+
+        qt = QTemplate.create(owner=u.id,
+                              title="testqtemplate1",
+                              desc="Just a test",
+                              marker=0,
+                              scoremax=0,
+                              status=0
+        )
+
+        qt.embed_id = "93456"
+        db.session.add(qt)
+        db.session.commit()
+
+        self.assertEqual(qt.owner, u.id)
+        self.assertEqual(qt.title,"testqtemplate1")
+
+        qt2 = QTemplate.get_by_embedid("93456")
+
+        self.assertEqual(qt2.owner, u.id)
+        self.assertEqual(qt2.id, qt.id)

@@ -7,8 +7,9 @@
     Handle Question (template) related operations.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from oasis import db
+from logging import log, INFO, WARN, ERROR
 
 
 class QTemplate(db.Model):
@@ -38,62 +39,56 @@ class QTemplate(db.Model):
     status = Column(Integer)
     embed_id = Column(String(200))
 
+    @staticmethod
+    def get_by_embedid(embed_id):
+        """ Find the question template with the given embed_id,
+            or raise KeyError if not found.
+        """
+
+        if not embed_id:
+            raise KeyError
+        return QTemplate.query.filter_by(embed_id=embed_id).first()
+
+    @staticmethod
+    def get(qt_id, version=None):
+        """ Return the numbered QTemplate. If no version give, return the most
+            recent one. """
+
+        if version:
+            return QTemplate.query.filter_by(id=qt_id).order_by("-version").first()
+        return QTemplate.query.filter_by(id=qt_id, version=version).first()
+
+    @staticmethod
+    def create(owner, title, desc, marker, scoremax, status):
+        """ Create a new Question Template. """
+
+        newqt = QTemplate()
+        newqt.owner = owner
+        newqt.title = title
+        newqt.description = desc
+        newqt.marker = marker
+        newqt.scoremax = scoremax
+        newqt.status = status
+
+        db.session.add(newqt)
+        db.session.commit()
+
+        log(INFO, "QTemplate %s Created by %s" % (newqt.id, owner))
+
+        return newqt
 
 
-
-def get_qt_by_embedid(embed_id):
-    """ Find the question template with the given embed_id,
-        or raise KeyError if not found.
-    """
-    sql = "SELECT qtemplate FROM qtemplates WHERE embed_id=%s LIMIT 1;"
-    params = (embed_id,)
-    ret = run_sql(sql, params)
-    if not ret:
-        raise KeyError("Can't find qtemplate with embed_id = %s" % embed_id)
-    row = ret[0]
-    qtemplate = int(row[0])
-    return qtemplate
-
-
-def get_qtemplate(qt_id, version=None):
-    """ Return a dictionary with the QTemplate information """
-    if version:
-        sql = """SELECT qtemplate, owner, title, description,
-                        marker, scoremax, version, status, embed_id
-                 FROM qtemplates
-                 WHERE qtemplate=%s
-                   AND version=%s;"""
-        params = (qt_id, version)
-    else:
-        sql = """SELECT qtemplate, owner, title, description,
-                        marker, scoremax, version, status, embed_id
-                 FROM qtemplates
-                 WHERE qtemplate=%s
-                 ORDER BY version DESC
-                 LIMIT 1;"""
-        params = (qt_id,)
-    ret = run_sql(sql, params)
-    if len(ret) == 0:
-        raise KeyError("Can't find qtemplate %s, version %s" % (qt_id, version))
-    row = ret[0]
-    qtemplate = {
-        'id': int(row[0]),
-        'owner': int(row[1]),
-        'title': row[2],
-        'description': row[3],
-        'marker': row[4],
-        'scoremax': row[5],
-        'version': int(row[6]),
-        'status': int(row[7]),
-        'embed_id': row[8]
-    }
-    if not qtemplate['embed_id']:
-        qtemplate['embed_id'] = ""
-    try:
-        qtemplate['scoremax'] = float(qtemplate['scoremax'])
-    except TypeError:
-        qtemplate['scoremax'] = None
-    return qtemplate
+def create_qt_att(qt_id, name, mimetype, data, version):
+    """ Create a new Question Template Attachment using given data."""
+    if not data:
+        data = ""
+    if isinstance(data, unicode):
+        data = data.encode("utf8")
+    safedata = psycopg2.Binary(data)
+    run_sql("""INSERT INTO qtattach (qtemplate, mimetype, name, data, version)
+               VALUES (%s, %s, %s, %s, %s);""",
+               (qt_id, mimetype, name, safedata, version))
+    return None
 
 
 def get_qt_atts(qt_id, version=1000000000):
@@ -140,7 +135,6 @@ def get_q_att_mimetype(qt_id, name, variation, version=1000000000):
         log(WARN,
             "%s args=(%s,%s,%s,%s)" % (err, qt_id, name, variation, version))
     return False
-
 
 
 def get_qt_att_mimetype(qt_id, name, version=1000000000):
@@ -355,7 +349,6 @@ def get_qt_num_variations(qt_id, version=1000000000):
     return num
 
 
-
 def create_qt_att(qt_id, name, mimetype, data, version):
     """ Create a new Question Template Attachment using given data."""
     if not data:
@@ -455,22 +448,6 @@ def add_qt_variation(qt_id, variation, data, version):
     run_sql("INSERT INTO qtvariations (qtemplate, variation, data, version) "
             "VALUES (%s, %s, %s, %s)",
             (qt_id, variation, safedata, version))
-
-
-def create_qt(owner, title, desc, marker, scoremax, status):
-    """ Create a new Question Template. """
-    conn = dbpool.begin()
-    conn.run_sql("INSERT INTO qtemplates (owner, title, description, marker, scoremax, status, version) "
-                 "VALUES (%s, %s, %s, %s, %s, %s, 2);",
-                 (owner, title, desc, marker, scoremax, status))
-    res = conn.run_sql("SELECT currval('qtemplates_qtemplate_seq')")
-    dbpool.commit(conn)
-    if res:
-        return int(res[0][0])
-    log(ERROR,
-        "create_qt error (%d, %s, %s, %d, %s, %s)" %
-        (owner, title, desc, marker, scoremax, status))
-
 
 
 def get_prac_stats_user_qt(user_id, qt_id):
