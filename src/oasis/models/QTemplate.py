@@ -12,6 +12,7 @@ from oasis import db
 from logging import log, INFO, WARN, ERROR
 import cPickle
 
+
 class QTemplate(db.Model):
 
     __tablename__ = "qtemplates"
@@ -465,6 +466,24 @@ def get_qt_editor(qt_id):
         if att.endswith(".oqe"):
             etype = "OQE"
     return etype
+
+
+class QuestionTopic(db.Model):
+    """ Track a question's position in a topic.
+    """
+
+    __tablename__ = "questiontopics"
+    #
+    #CREATE TABLE questiontopics (
+    #    "id" SERIAL PRIMARY KEY,
+    #    "qtemplate" integer REFERENCES qtemplates("qtemplate") NOT NULL,
+    #    "topic" integer REFERENCES topics("topic") NOT NULL,
+    #    "position" integer
+    #);
+    id = Column(Integer, primary_key=True)
+    qtemplate = Column(Integer, ForeignKey("qtemplates.qtemplate"))
+    topic = Column(Integer, ForeignKey("topics.topic"))
+    position = Column(Integer, default=0)
 
 
 
