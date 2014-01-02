@@ -48,7 +48,7 @@ class Group(db.Model):
     feedargs = Column(String(250))
     active = Column(Boolean, default=True)
 
-    _period_obj = None  #cache
+    _period_obj = None  # cache
 
     def __init__(self,
                  name=None,

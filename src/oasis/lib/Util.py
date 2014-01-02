@@ -20,6 +20,7 @@ from . import OaConfig
 
 app = oasis.app
 
+
 # Human readable symbols
 def generate_uuid_readable(length=9):
     """ Create a new random uuid suitable for acting as a unique key in the db
@@ -33,7 +34,6 @@ def generate_uuid_readable(length=9):
     # 57^n possibilities - about 6 million billion options for n=9.
     # Hopefully pretty good.
     return "".join([random.choice(valid) for _ in xrange(length)])
-
 
 
 @app.context_processor
@@ -309,7 +309,6 @@ def secs_to_human(seconds):
     return "%d days ago" % int(seconds / perday)
 
 
-
 def human_dates(start, end, html=True):
     """ Return a string containing a nice human readable description of
         the time period.
@@ -339,6 +338,7 @@ def human_date(date):
         return date.strftime("%b %d, %I:%M%P")
 
     return date.strftime("%Y %b %d, %I:%M%P")
+
 
 def date_from_py2js(when):
     """ Convert date from Python datetime object to Javascript friendly

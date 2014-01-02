@@ -34,7 +34,7 @@ def get_practice_q(qt_id, user_id):
         return question
 
     qid = General.gen_q(qt_id, user_id)
-    assert(qid)
+    assert qid
     try:
         question = Question.get(qid)
     except (ValueError, TypeError):
@@ -100,7 +100,7 @@ def get_sorted_qlist_wstats(course_id, topic_id, user_id=None):
         question['maxscore'] = DB.get_qt_maxscore(question['qtid'])
 
         stats_1 = DB.get_student_q_practice_stats(user_id, question['qtid'], 3)
-        if stats_1: # Last practices
+        if stats_1:  # Last practices
             # Date of last practice
             question['age'] = stats_1[(len(stats_1) - 1)]['age']
             question['ageseconds'] = stats_1[(len(stats_1) - 1)]['ageseconds']

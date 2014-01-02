@@ -284,7 +284,6 @@ def get_qt_att(qt_id, name, version=1000000000):
     return value
 
 
-
 def get_qt_max_pos_in_topic(topic_id):
     """ Fetch the maximum position of a question template in a topic."""
     res = run_sql("""SELECT MAX(position)

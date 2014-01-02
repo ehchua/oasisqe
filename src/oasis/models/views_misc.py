@@ -342,8 +342,6 @@ def login_webauth_submit():
     return redirect(url_for("main_top"))
 
 
-
-
 # Does its own auth because it may be used in embedded questions
 @app.route("/att/qatt/<int:qt_id>/<int:version>/<int:variation>/<fname>")
 def attachment_question(qt_id, version, variation, fname):

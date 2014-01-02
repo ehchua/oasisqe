@@ -124,10 +124,10 @@ def render_own_marked_exam(student, exam):
     results = []
 
     if not examsubmit:
-        return [{'pos':1,
+        return [{'pos': 1,
                 'html': "In Progress",
                 'marking': {}
-        },], False
+        }, ], False
     examtotal = 0.0
     for q_id in questions:
         q = Question.get(q_id)

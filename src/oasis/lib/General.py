@@ -168,7 +168,7 @@ def gen_q(qtid, student=0, exam=0, position=0):
         variation = random.randint(1, numvars)
     else:
         log(WARN, "No question variations (qtid=%d)" % qtid)
-        assert(False)
+        assert False
         return False
     return gen_q_from_var(qtid, student, exam, position, version, variation)
 
@@ -715,7 +715,7 @@ def mark_q_script(qvars, script, answer):
         script_funcs.q_log(qid,
                            "error",
                            "__marker.py",
-                           "Falling back to standard marker: __marker.py: %s" %(
+                           "Falling back to standard marker: __marker.py: %s" % (
             traceback.format_exception(etype, value, tb)[-2:]))
     try:
         qid = qvars['OaQID']

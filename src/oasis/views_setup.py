@@ -26,6 +26,7 @@ from oasis.models.Permission import Permission
 from oasis.models.Course import Course
 from oasis.models.Exam import Exam
 
+
 @app.route("/setup/top")
 @authenticated
 def setup_top():
@@ -295,7 +296,7 @@ def setup_change_pass_submit():
     """ Set a new password """
     u = User.get(session['user_id'])
     if not u:
-      abort(404)
+        abort(404)
 
     if not "newpass" in request.form or not "confirm" in request.form:
         flash("Please provide your new password")

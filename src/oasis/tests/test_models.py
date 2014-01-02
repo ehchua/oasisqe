@@ -240,7 +240,7 @@ class TestApp(TestCase):
         db.session.commit()
 
         self.assertEqual(qt.owner, u.id)
-        self.assertEqual(qt.title,"testqtemplate1")
+        self.assertEqual(qt.title, "testqtemplate1")
 
         qt2 = QTemplate.get_by_embedid("93456")
 

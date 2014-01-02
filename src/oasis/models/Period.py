@@ -47,7 +47,7 @@ class Period(db.Model):
         return Period.query.filter_by(name=name).first()
 
     @staticmethod
-    def get( p_id):
+    def get(p_id):
         """ If an existing record exists with this id, load it and
             return.
         """

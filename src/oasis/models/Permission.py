@@ -30,7 +30,7 @@ class Permission(db.Model):
         """ Check to see if the user has the permission on the given course. """
         permission = 0
         if not isinstance(perm, int):  # we have a string name so look it up
-            if PERMS.has_key(perm):
+            if perm in PERMS:
                 permission = PERMS[perm]
 
         # If they're superuser, let em do anything
@@ -49,7 +49,6 @@ class Permission(db.Model):
         if Permission.query.filter_by(userid=user_id, permission=0, course_id=group_id):
             return True
         return False
-
 
     @staticmethod
     def satisfy_perms(uid, group_id, permlist):
@@ -74,7 +73,6 @@ class Permission(db.Model):
     def add_perm(uid, course_id, perm):
         """ Assign a permission."""
         db.insert("permissions", values={'course': course_id, 'userid': uid, 'permission': perm})
-
 
     @staticmethod
     def get_course_perms(course_id):

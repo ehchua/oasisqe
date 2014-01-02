@@ -72,7 +72,7 @@ class Question(db.Model):
 
     @staticmethod
     def get(qid):
-        assert(qid)
+        assert qid
         question = Question.query.filter_by(id=qid).first()
         if not question:
             raise KeyError
@@ -84,7 +84,7 @@ class Question(db.Model):
 
         conn.run_sql("""INSERT INTO questions (qtemplate, name, student, status, variation, version, exam)
                    VALUES (%s, %s, %s, %s, %s, %s, %s);""",
-                     (qt_id, name, student, status, variation, version, exam ))
+                     (qt_id, name, student, status, variation, version, exam))
         res = conn.run_sql("SELECT currval('questions_question_seq')")
 
         if not res:
@@ -93,7 +93,6 @@ class Question(db.Model):
                     qt_id, name, student, status, variation, version, exam))
             return None
         return res[0][0]
-
 
     def get_student_q_practice_num(user_id, qt_id):
         """Return the number of times the given student has practiced the question
@@ -172,7 +171,6 @@ class Question(db.Model):
             return stats[::-1]   # reverse it so they're in time order
         return None
 
-
     def get_q_stats_class(self, course, qt_id):
         """Fetch a bunch of statistics about the given question for the class
         """
@@ -211,9 +209,6 @@ class Question(db.Model):
                 return stats
 
 
-
-
-
 def get_q_att(qt_id, name, variation, version=1000000000):
     """ Fetch an attachment for the question"""
     if version == 1000000000:
@@ -237,14 +232,12 @@ def get_q_att(qt_id, name, variation, version=1000000000):
     return value
 
 
-
 def create_q_att(qt_id, variation, name, mimetype, data, version):
     """ Create a new Question Attachment using given data."""
     safedata = psycopg2.Binary(data)
     run_sql("""INSERT INTO qattach (qtemplate, variation, mimetype, name, data, version)
                VALUES (%s, %s, %s, %s, %s, %s);""",
                (qt_id, variation, mimetype, name, safedata, version))
-
 
 
 def save_guess(q_id, part, value):

@@ -98,7 +98,7 @@ class Exam(db.Model):
 
     @staticmethod
     def by_course(course, prev_years=False):
-        """ Return a summary of information about all current exams in the course
+        """ Return a summary of information about current exams in the course
             {id, course, name, description, start, duration, end, type}
         """
         if prev_years:
@@ -158,7 +158,8 @@ class Exam(db.Model):
         return todatetime(submittime)
 
     def is_done_by(self, user):
-        """ Return True if the user has submitted the exam. We currently look for an entry in marklog."""
+        """ Return True if the user has submitted the exam.
+            We look for an entry in marklog."""
         ret = run_sql("SELECT marker FROM marklog WHERE exam=%s AND student=%s;",
                       (exam, user))
         # FIXME:  This can now be handled by the userexams status, but since
@@ -183,7 +184,8 @@ class Exam(db.Model):
         res = run_sql("""SELECT status FROM userexams WHERE exam=%s AND student=%s;""", (exam, student))
         if res:
             return int(res[0][0])
-        log(ERROR, "Unable to get user %s status for exam %s! " % (student, exam))
+        log(ERROR,
+            "Unable to get user %s status for exam %s! " % (student, exam))
         return -1
 
     def set_user_status(self, student, status):
@@ -194,7 +196,8 @@ class Exam(db.Model):
         run_sql("""UPDATE userexams SET status=%s WHERE exam=%s AND student=%s;""", (status, exam, student))
         newstatus = get_user_status(student, exam)
         if not newstatus == status:
-            log(ERROR, "Failed to set new status:  setUserStatus(%s, %s, %s)" % (student, exam, status))
+            log(ERROR,
+                "Failed to set new status:  setUserStatus(%s, %s, %s)" % (student, exam, status))
         touchUserExam(exam, student)
 
     def get_end_time(self, user):
@@ -381,7 +384,6 @@ class Exam(db.Model):
     def can_preview(self, user_id):
         return Permission.check_perm(user_id, self.course, "exampreview")
 
-
     def get_marks(self, group):
         """ Fetch the marks for a given user group.
         """
@@ -473,7 +475,8 @@ class Exam(db.Model):
                                     (exam_id, position, alt))
 
     def add_exam_q(self, user, question, position):
-        """Record that the student was assigned the given question for assessment.
+        """ Record that the student was assigned the given question for
+            assessment.
         """
         sql = """SELECT id FROM examquestions
                   WHERE exam = %s

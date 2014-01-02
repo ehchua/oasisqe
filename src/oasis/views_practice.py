@@ -170,7 +170,7 @@ def practice_do_question(topic_id, qt_id):
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
-            q_title=question.title,
+            q_title=qtemplate.title,
             questions=questions,
             q_pos="?",
         )

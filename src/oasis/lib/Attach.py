@@ -4,10 +4,11 @@
 # http://www.gnu.org/licenses/agpl-3.0.html
 
 """Attach.py
- Send a question attachment
+   Send a question attachment
 """
 
 from oasis.lib import DB
+
 
 def is_restricted(fname):
     """ Is the filename restricted
