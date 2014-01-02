@@ -86,7 +86,7 @@ def practice_choose_question(topic_id):
                 abort(404)
 
     for topic in topics:
-        if topic['visibility'] == 2:  # course only
+        if topic.visibility == 2:  # course only
             if not members:
                 members = course.get_users()
             if not user_id in members:
