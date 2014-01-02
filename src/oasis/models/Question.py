@@ -10,8 +10,9 @@
 from logging import log, ERROR, INFO, WARN
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from oasis import db
-# from oasis.models.QTemplate import QTemplate
+from oasis.models.QTemplate import QTemplate
 from oasis.lib import Util
+import datetime
 
 
 class Question(db.Model):
@@ -52,17 +53,30 @@ class Question(db.Model):
     def marktime_string(self):
         return self.marktime.strftime("%Y %b %d, %I:%M%P")
 
+    def set_viewtime(self, when=None):
+        """ Set the time the question was first viewed.
+        """
+
+        if not when:
+            when = datetime.datetime.now()
+
+        self.firstview = when
+        db.session.add(self)
+        db.session.commit()
+
     @staticmethod
-    def get_q_by_qt_student(qt_id, student):
+    def get_by_qt_student(qt_id, student):
         """ Fetch a question by student"""
 
-        ret = run_sql("""SELECT question FROM questions
-                            WHERE student = %s
-                            AND qtemplate = %s and status = '1'
-                            AND exam = '0'""", (student, qt_id))
-        if ret:
-            return int(ret[0][0])
-        return False
+        return Question.query.filter_by(student=student, qtemplate=qt_id, status=1, exam=0).first()
+
+    @staticmethod
+    def get(qid):
+        assert(qid)
+        question = Question.query.filter_by(id=qid).first()
+        if not question:
+            raise KeyError
+        return question
 
     @staticmethod
     def create_q(qt_id, name, student, status, variation, version, exam):

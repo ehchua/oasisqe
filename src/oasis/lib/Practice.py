@@ -13,6 +13,8 @@ from oasis.lib import General
 from oasis.lib.OaExceptions import OaMarkerError
 from . import OaConfig, DB, Pool
 from oasis.models.Topic import Topic
+from oasis.models.QTemplate import QTemplate
+from oasis.models.Question import Question
 from oasis.models.Permission import Permission
 
 fileCache = Pool.fileCache(OaConfig.cachedir)
@@ -26,17 +28,20 @@ def get_practice_q(qt_id, user_id):
         assert qt_id > 0
     except (ValueError, TypeError, AssertionError):
         log(WARN, "Called with bad qtid %s?" % qt_id)
-    qid = DB.get_q_by_qt_student(qt_id, user_id)
-    if not qid is False:
-        return int(qid)
+
+    question = Question.get_by_qt_student(qt_id, user_id)
+    if question:
+        return question
+
     qid = General.gen_q(qt_id, user_id)
+    assert(qid)
     try:
-        qid = int(qid)
+        question = Question.get(qid)
     except (ValueError, TypeError):
         log(WARN,
             "generateQuestion(%s,%s) Fail: returned %s" % (qt_id, user_id, qid))
     else:
-        DB.set_q_viewtime(qid)
+        question.set_viewtime()
     return qid
 
 
@@ -144,9 +149,11 @@ def is_q_blocked(user_id, course_id, topic_id, qt_id):
         True, or a (str) error message indicating why it's blocked.
     """
     topic = Topic.get(topic_id)
+    qtemplate = QTemplate.get(qt_id)
+
     canpreview = Permission.check_perm(user_id, course_id, "questionpreview")
     # They're trying to go directly to a hidden question?
-    position = DB.get_qtemplate_topic_pos(qt_id, topic_id)
+    position = qtemplate.topic_pos(topic_id)
     if position <= 0 and not canpreview:
         return "Access denied to question."
         # They're trying to go directly to a question in an invisible category?

@@ -56,8 +56,8 @@ class QTemplate(db.Model):
             recent one. """
 
         if version:
-            return QTemplate.query.filter_by(id=qt_id).order_by("-version").first()
-        return QTemplate.query.filter_by(id=qt_id, version=version).first()
+            return QTemplate.query.filter_by(id=qt_id, version=version).first()
+        return QTemplate.query.filter_by(id=qt_id).order_by("-version").first()
 
     @staticmethod
     def create(owner, title, desc, marker, scoremax, status):
@@ -77,6 +77,33 @@ class QTemplate(db.Model):
         log(INFO, "QTemplate %s Created by %s" % (newqt.id, owner))
 
         return newqt
+
+    def topic_pos(self, topic_id):
+        """ Fetch the position of the question template in a topic. """
+        ret = QuestionTopic.query.filter_by(qtemplate=self.id, topic=topic_id).first()
+
+        if ret:
+            return int(ret.position)
+        return False
+
+    def num_variations(self, version=1000000000):
+        """ Return the number of variations for a question template. """
+        if version == 1000000000:
+            version = self.version
+
+        ret = db.engine.execute("""SELECT MAX(variation) FROM qtvariations
+                            WHERE qtemplate=%s AND version = (
+                             SELECT MAX(version) FROM qtvariations
+                                 WHERE qtemplate=%s AND version <= %s)""",
+                      (self.id, self.id, int(version)))
+        try:
+            num = int(ret[0][0])
+        except BaseException, err:
+            log(WARN,
+                "No Variation found for qtid=%d, version=%d: %s" %
+                (self.id, version, err))
+            return 0
+        return num
 
 
 def create_qt_att(qt_id, name, mimetype, data, version):
@@ -257,15 +284,6 @@ def get_qt_att(qt_id, name, version=1000000000):
     return value
 
 
-def get_qtemplate_topic_pos(qt_id, topic_id):
-    """ Fetch the position of a question template in a topic. """
-    ret = run_sql("""SELECT position
-                     FROM questiontopics
-                     WHERE qtemplate=%s AND topic=%s;""", (qt_id, topic_id))
-    if ret:
-        return int(ret[0][0])
-    return False
-
 
 def get_qt_max_pos_in_topic(topic_id):
     """ Fetch the maximum position of a question template in a topic."""
@@ -329,25 +347,6 @@ def get_qt_variation(qt_id, variation, version=1000000000):
             "Type error trying to cpickle.loads(%s) for (%s, %s, %s)" %
             (type(result), qt_id, variation, version))
     return data
-
-
-def get_qt_num_variations(qt_id, version=1000000000):
-    """ Return the number of variations for a question template. """
-    if version == 1000000000:
-        version = get_qt_version(qt_id)
-    ret = run_sql("""SELECT MAX(variation) FROM qtvariations
-                        WHERE qtemplate=%s AND version = (
-                         SELECT MAX(version) FROM qtvariations
-                             WHERE qtemplate=%s AND version <= %s)""",
-                  (qt_id, qt_id, int(version)))
-    try:
-        num = int(ret[0][0])
-    except BaseException, err:
-        log(WARN,
-            "No Variation found for qtid=%d, version=%d: %s" %
-            (qt_id, version, err))
-        return 0
-    return num
 
 
 def update_qt_pos(qt_id, topic_id, position):

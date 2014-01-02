@@ -137,13 +137,12 @@ def practice_do_question(topic_id, qt_id):
     course = Course.get(topic.course)
 
     try:
-        qtemplate = DB.get_qtemplate(qt_id)
+        qtemplate = QTemplate.get(qt_id)
     except KeyError:
         qtemplate = None
         abort(404)
     questions = Practice.get_sorted_questions(course.id, topic_id, user_id)
-    q_title = qtemplate['title']
-    q_pos = DB.get_qtemplate_topic_pos(qt_id, topic_id)
+    q_pos = qtemplate.topic_pos(topic_id)
 
     blocked = Practice.is_q_blocked(user_id, course.id, topic_id, qt_id)
     if blocked:
@@ -154,13 +153,13 @@ def practice_do_question(topic_id, qt_id):
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
-            q_title=q_title,
+            q_title=qtemplate.title,
             questions=questions,
             q_pos=q_pos,
         )
 
     try:
-        q_id = Practice.get_practice_q(qt_id, user_id)
+        question = Practice.get_practice_q(qt_id, user_id)
     except (ValueError, TypeError), err:
         log(ERROR,
             "ERROR 1001  (%s,%s) %s" % (qt_id, user_id, err))
@@ -171,12 +170,12 @@ def practice_do_question(topic_id, qt_id):
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
-            q_title=q_title,
+            q_title=question.title,
             questions=questions,
             q_pos="?",
         )
 
-    if not q_id > 0:
+    if not question:
         return render_template(
             "practicequestionerror.html",
             mesg="Error generating question.",
@@ -184,12 +183,12 @@ def practice_do_question(topic_id, qt_id):
             topic_id=topic_id,
             qt_id=qt_id,
             course=course,
-            q_title=q_title,
+            q_title="(unknown)",
             questions=questions,
             q_pos="?",
         )
 
-    q_body = General.render_q_html(q_id)
+    q_body = question.render_html()
     q_body = q_body.replace(r"\240", u" ")  # TODO: why is this here?
 
     return render_template(
@@ -199,10 +198,10 @@ def practice_do_question(topic_id, qt_id):
         topic_id=topic_id,
         qt_id=qt_id,
         course=course,
-        q_title=q_title,
+        q_title=question.title,
         questions=questions,
         q_pos=q_pos,
-        q_id=q_id,
+        q_id=question.id,
     )
 
 

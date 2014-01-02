@@ -161,12 +161,14 @@ def gen_q(qtid, student=0, exam=0, position=0):
         Will return the ID of the created instance.
     """
     # Pick a variation randomly
-    version = DB.get_qt_version(qtid)
-    numvars = DB.get_qt_num_variations(qtid, version)
+    qtemplate = QTemplate.get(qtid)
+    version = qtemplate.version
+    numvars = qtemplate.num_variations()
     if numvars > 0:
         variation = random.randint(1, numvars)
     else:
         log(WARN, "No question variations (qtid=%d)" % qtid)
+        assert(False)
         return False
     return gen_q_from_var(qtid, student, exam, position, version, variation)
 
