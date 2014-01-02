@@ -154,8 +154,10 @@ def login_forgot_pass_submit():
               "that account.")
         return redirect(url_for("login_forgot_pass"))
 
-    text_body = render_template(os.path.join("email", "forgot_pass.txt"), code=code)
-    html_body = render_template(os.path.join("email", "forgot_pass.html"), code=code)
+    text_body = render_template(os.path.join("email", "forgot_pass.txt"),
+                                code=code)
+    html_body = render_template(os.path.join("email", "forgot_pass.html"),
+                                code=code)
     send_email(u.email,
                from_addr=None,
                subject="OASIS Password Reset",
@@ -305,7 +307,7 @@ def login_webauth_submit():
         to see if we can find them.
     """
     if not 'REMOTE_USER' in request.environ:
-        log(ERROR, "REMOTE_USER not provided by web server and 'webauth' is being attempted.")
+        log(ERROR, "REMOTE_USER not provided by web server for 'webauth'.")
         return redirect(url_for("login_webauth_error"))
 
     username = request.environ['REMOTE_USER']
@@ -359,9 +361,9 @@ def attachment_question(qt_id, version, variation, fname):
     if not mtype:
         abort(404)
 
-    expiry_time = datetime.datetime.utcnow() + datetime.timedelta(10)
+    expiry = datetime.datetime.utcnow() + datetime.timedelta(10)
     response = send_file(fname, mtype)
-    response.headers["Expires"] = expiry_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    response.headers["Expires"] = expiry.strftime("%a, %d %b %Y %H:%M:%S GMT")
     return response
 
 
@@ -379,9 +381,9 @@ def attachment_qtemplate(qt_id, version, variation, fname):
         abort(403)
     if not mtype:
         abort(404)
-    expiry_time = datetime.datetime.utcnow() + datetime.timedelta(10)
+    expiry = datetime.datetime.utcnow() + datetime.timedelta(10)
     response = send_file(filename, mtype)
-    response.headers["Expires"] = expiry_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    response.headers["Expires"] = expiry.strftime("%a, %d %b %Y %H:%M:%S GMT")
     return response
 
 

@@ -21,6 +21,7 @@ from oasis.models.QTemplate import QTemplate
 
 from oasis import app, db
 
+
 class TestApp(TestCase):
 
     def setUp(self):
@@ -30,12 +31,10 @@ class TestApp(TestCase):
         self.app = app.test_client()
         db.create_all()
 
-
     def tearDown(self):
 
         db.drop_all()
         db.session.remove()
-
 
     def test_user_obj(self):
 
@@ -207,7 +206,7 @@ class TestApp(TestCase):
         tc2 = list(Topic.by_course(course2.id))
 
         self.assertListEqual(tc1, [topic1, topic2])
-        self.assertListEqual(tc2, [topic3,])
+        self.assertListEqual(tc2, [topic3, ])
 
     def test_qtemplate_create(self):
 

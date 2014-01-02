@@ -339,7 +339,7 @@ def cadmin_exam_results(course_id, exam_id):
 
 
 @app.route("/cadmin/<int:course_id>/exam/<int:exam_id>/<int:group_id>/export.csv")
-@require_course_perm(("coursecoord", "courseadmin","viewmarks"))
+@require_course_perm(("coursecoord", "courseadmin", "viewmarks"))
 def cadmin_export_csv(course_id, exam_id, group_id):
     """ Send the group results as a CSV file """
     course = Course.get(course_id)
@@ -357,8 +357,10 @@ def cadmin_export_csv(course_id, exam_id, group_id):
     group = Group.get(group_id)
     output = Spreadsheets.exam_results_as_spreadsheet(course_id, group, exam_id)
     response = make_response(output)
-    response.headers.add('Content-Type', "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8")
-    response.headers.add('Content-Disposition', 'attachment; filename="OASIS_%s_%s_Results.xlsx"' % (course.title, exam.title))
+    response.headers.add('Content-Type',
+                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8")
+    response.headers.add('Content-Disposition',
+                         'attachment; filename="OASIS_%s_%s_Results.xlsx"' % (course.title, exam.title))
 
     return response
 
@@ -686,7 +688,8 @@ def cadmin_deactivate(course_id):
     return redirect(url_for("cadmin_config", course_id=course_id))
 
 
-@app.route("/cadmin/<int:course_id>/group/<int:group_id>/detach_group", methods=["POST", ])
+@app.route("/cadmin/<int:course_id>/group/<int:group_id>/detach_group",
+           methods=["POST", ])
 @require_course_perm(("useradmin", "courseadmin", "coursecoord"))
 def cadmin_group_detach(course_id, group_id):
     """ Mark the course as inactive
@@ -766,16 +769,18 @@ def cadmin_edit_topic(course_id, topic_id):
     for qt in qtemplates:
         if qt.embed_id:
             qt.embed_url = "%s/embed/question/%s/question.html" % \
-                                    (OaConfig.parentURL, qt.embed_id)
+                           (OaConfig.parentURL, qt.embed_id)
         else:
             qt.embed_url = None
 
     all_courses = Course.all()
     all_courses = [crse
                    for crse in all_courses
-                   if Permission.satisfy_perms(user_id, int(crse.id),
-                                   ("questionedit", "courseadmin",
-                                    "sysadmin"))]
+                   if Permission.satisfy_perms(user_id,
+                                               int(crse.id),
+                                               ("questionedit", "courseadmin", "sysadmin")
+        )
+    ]
     all_courses.sort(lambda f, s: cmp(f.name, s.name))
 
     all_course_topics = []
@@ -950,7 +955,8 @@ def cadmin_course_add_group(course_id):
     return redirect(url_for('cadmin_config', course_id=course_id))
 
 
-@app.route("/cadmin/<int:course_id>/questions_import/<topic_id>", methods=['POST',])
+@app.route("/cadmin/<int:course_id>/questions_import/<topic_id>",
+           methods=['POST',])
 @require_course_perm(("questioneditor", 'coursecoord', 'courseadmin'))
 def cadmin_course_questions_import(course_id, topic_id):
     """ Take an OAQ file and import any questions in it into topic

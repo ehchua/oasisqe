@@ -51,6 +51,7 @@ def admin_feeds():
         feeds=feeds
     )
 
+
 @app.route("/admin/sysstats")
 @require_perm('sysadmin')
 def admin_sysstats():
@@ -63,7 +64,6 @@ def admin_sysstats():
         db_version=db_version,
         db_sizes=db_sizes
     )
-
 
 
 @app.route("/admin/userfeeds")
@@ -95,11 +95,14 @@ def admin_periods():
 def admin_groups():
     """ Present page to administer time periods in the system """
     groups = Group.all_groups()
-    inactive_groups = [group for group in groups if group.period_obj().historical()] # TODO: Needs this method added to group
+
+    # TODO: Needs this method added to group
+    inactive = [group for group in groups if group.period_obj().historical()]
+
     return render_template(
         "admin_groups.html",
         groups=groups,
-        inactive_groups=inactive_groups
+        inactive_groups=inactive
     )
 
 
@@ -248,6 +251,7 @@ def admin_add_feed():
         scripts=scripts
     )
 
+
 @app.route("/admin/add_userfeed")
 @require_perm('sysadmin')
 def admin_add_userfeed():
@@ -262,6 +266,7 @@ def admin_add_userfeed():
         feed={'id': 0},
         scripts=scripts
     )
+
 
 @app.route("/admin/edit_userfeed/<int:feed_id>")
 @require_perm('sysadmin')
@@ -307,7 +312,7 @@ def admin_edit_userfeed(feed_id):
 @app.route("/admin/group/<int:group_id>/test_feed_output")
 @require_perm('sysadmin')
 def group_test_feed_output(group_id):
-    """ Run the feed script for the group and return the output or error message.
+    """ Run the feed script for the group and return the output or error message
     """
     error = None
     output = ""
@@ -323,7 +328,9 @@ def group_test_feed_output(group_id):
     period = Period.get(group.period)
     scriptrun = ' '.join([feed.script, group.feedargs, period.code])
     try:
-        output = External.feeds_run_group_script(feed.script, args=[group.feedargs, period.code])
+        output = External.feeds_run_group_script(feed.script,
+                                                 args=[group.feedargs,
+                                                       period.code])
     except BaseException, err:
         error = err
 
@@ -485,8 +492,8 @@ def admin_edit_user_feed_submit(feed_id):
     feed.comments = comments
     feed.freq = freq
     feed.active = active
-    feed.priority=priority
-    feed.regex=regex
+    feed.priority = priority
+    feed.regex = regex
 
     if name == "":
         flash("Can't Save: Name must be supplied")

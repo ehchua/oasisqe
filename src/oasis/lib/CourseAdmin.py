@@ -47,9 +47,9 @@ def do_topic_update(course, request):
             else:
                 if not i['name'] == "[Name of new topic]":
                     Topic.create(course.id,
-                                  i['name'],
-                                  int(i['visibility']),
-                                  i['position'])
+                                 i['name'],
+                                 int(i['visibility']),
+                                 i['position'])
         return True
 
     return False
@@ -60,7 +60,7 @@ def do_topic_update(course, request):
 def get_perm_short(pid):
     """ Return a short human readable name for the permission."""
 
-    pNames = {
+    pnames = {
         1: "Super User",
         2: "User Administrator",
         5: "Question Editor",
@@ -76,8 +76,8 @@ def get_perm_short(pid):
         20: "View Survey Results"
     }
 
-    if pid in pNames:
-        return pNames[pid]
+    if pid in pnames:
+        return pnames[pid]
     return None
 
 
@@ -264,4 +264,3 @@ def get_create_exam_q_list(course_id):
     for topic in topics:
         topic.questions = _get_q_list_sorted(topic.id)
     return topics
-

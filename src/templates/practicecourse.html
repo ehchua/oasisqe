@@ -26,7 +26,7 @@
         <ul class='nav nav-list'>
           {% for topic in topics %}
             {% if topic.visibility >= 2 %}
-              <li class=>
+              <li>
                 <a name='topic_{{ topic.id }}'
                    href='{{ cf.url }}practice/subcategory/{{ topic.id }}'>{{ topic.title }}</a>
                 ({{ topic.numquestions }} questions)

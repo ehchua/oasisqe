@@ -119,11 +119,12 @@ class Course(db.Model):
             if archived=2, return all courses
             if numq is true then include the number of questions in the topic
         """
+
         if archived == 0:
-            return Topic.query.filter_by(course=self.id, archived='0').order_by("position", "topic")
+            return [t for t in Topic.by_course(self.id) if not t.archived]
         elif archived == 1:
-            return Topic.query.filter_by(course=self.id, archived='1').order_by("position", "topic")
-        return Topic.query.filter_by(course=self.id).order_by("position", "topic")
+            return [t for t in Topic.by_course(self.id) if t.archived]
+        return [t for t in Topic.by_course(self.id)]
 
     def create_config_demonstration(self, period_id):
         """ Create any needed groups/configs for a demonstration course

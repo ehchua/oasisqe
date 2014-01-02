@@ -228,9 +228,9 @@ def assess_presubmit(course_id, exam_id):
     """  Ask if they're sure they want to submit. """
     user_id = session['user_id']
 
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    exam = Exam.get(exam_id)
     course = Course.get(course_id)
-    numquestions = Exams.get_num_questions(exam_id)
+    numquestions = exam.get_num_questions(exam_id)
     qids = []
     questions = []
     for position in range(1, numquestions + 1):
@@ -263,8 +263,8 @@ def assess_submit(course_id, exam_id):
     """  Submit and mark """
     user_id = session['user_id']
 
-    exam = Exams.get_exam_struct(exam_id, course_id)
-    status = Exams.get_user_status(user_id, exam_id)
+    exam = Exam.get(exam_id)
+    status = exam.get_user_status(user_id)
     if status < 5:
         marked = Assess.mark_exam(user_id, exam_id)
         if not marked:
@@ -287,9 +287,9 @@ def assess_awaitresults(course_id, exam_id):
     """  Thank them and tell them the results will be available later.
     """
     user_id = session['user_id']
-    exam = Exams.get_exam_struct(exam_id, course_id)
+    exam = Exam.get(exam_id)
     course = Course.get(course_id)
-    numquestions = Exams.get_num_questions(exam_id)
+    numquestions = exam.get_num_questions()
     qids = []
     questions = []
     for position in range(1, numquestions + 1):
@@ -319,11 +319,11 @@ def assess_viewmarked(course_id, exam_id):
     user_id = session['user_id']
     course = Course.get(course_id)
     try:
-        exam = Exams.get_exam_struct(exam_id, course_id)
+        exam = Exam.get(exam_id)
     except KeyError:
         exam = {}
         abort(404)
-    status = Exams.get_user_status(user_id, exam_id)
+    status = exam.get_user_status(user_id)
     if not status >= 5:
         flash("Assessment is not marked yet.")
         return render_template(
@@ -338,8 +338,8 @@ def assess_viewmarked(course_id, exam_id):
                                 exam_id=exam_id))
 
     results, examtotal = Assess.render_own_marked_exam(user_id, exam_id)
-    datemarked = General.human_date(Exams.get_mark_time(exam_id, user_id))
-    datesubmit = General.human_date(Exams.get_submit_time(exam_id, user_id))
+    datemarked = General.human_date(exam.get_mark_time(user_id))
+    datesubmit = General.human_date(exam.get_submit_time(user_id))
 
     if "user_fullname" in session:
         fullname = session['user_fullname']

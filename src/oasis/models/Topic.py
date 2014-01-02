@@ -21,7 +21,7 @@ class Topic(db.Model):
 #    "topic" SERIAL PRIMARY KEY,
 #    "course" integer REFERENCES courses("course") NOT NULL,
 #    "title" character varying(128) NOT NULL,
-#    "visibility" integer,
+#    "visibility" integer, # 2 = course only, 1 = staff only, 3 = org, 4 = anyone
 #    "position" integer DEFAULT 1,
 #    "archived" boolean DEFAULT false
 #);
@@ -115,4 +115,4 @@ class Topic(db.Model):
         """ Return a summary of information about all current topics in the course
         """
 
-        return Topic.query.filter_by(course=course, archived=0).order_by("position")
+        return list(Topic.query.filter_by(course=course).order_by("position"))

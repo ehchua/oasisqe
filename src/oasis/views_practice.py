@@ -43,12 +43,12 @@ def practice_choose_topic(course_id):
         course = None
         abort(404)
     try:
-        topics = list(course.topics())
+        topics = course.topics()
     except KeyError:
         topics = []
         abort(404)
 
-    members = None
+    members = []
     for topic in topics:
         if topic.visibility == 2:  # course only
             if not members:
