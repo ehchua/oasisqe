@@ -86,6 +86,19 @@ class QTemplate(db.Model):
             return int(ret.position)
         return False
 
+    def add_to_topic(self, topic_id, position=0):
+        """ Put the question template into the topic."""
+
+        exists = QuestionTopic.query.filter_by(qtemplate=self.id, topic=topic_id).first()
+        if exists:
+            return
+
+        qt = QuestionTopic(qtemplate=self.id,
+                           topic=topic_id,
+                           position=position)
+        db.session.add(qt)
+        db.session.commit()
+
     def num_variations(self, version=1000000000):
         """ Return the number of variations for a question template. """
         if version == 1000000000:
@@ -368,11 +381,6 @@ def move_qt_to_topic(qt_id, topic_id):
          SET topic=%s WHERE qtemplate=%s;""", (topic_id, qt_id))
 
 
-def add_qt_to_topic(qt_id, topic_id, position=0):
-    """ Put the question template into the topic."""
-    run_sql("INSERT INTO questiontopics (qtemplate, topic, position) "
-            "VALUES (%s, %s, %s)", (qt_id, topic_id, position))
-
 
 def copy_qt_all(qt_id):
     """ Make an identical copy of a question template,
@@ -483,5 +491,18 @@ class QuestionTopic(db.Model):
     topic = Column(Integer, ForeignKey("topics.topic"))
     position = Column(Integer, default=0)
 
+    def __init__(self, qtemplate, topic, position=0):
+        self.qtemplate = qtemplate
+        self.topic = topic
+        self.position = position
 
+    @staticmethod
+    def in_topic(topic_id):
+        """ A list of question template IDs in the given topic.
+             [( position, qtemplate_id ),
+                ...
+             ]
+        """
 
+        qts = QuestionTopic.query.filter_by(topic=topic_id)
+        return [(qt.position, qt.qtemplate) for qt in qts]
