@@ -61,45 +61,47 @@ class Topic(db.Model):
             topic.position = 0
         return topic
 
-    def qtemplates(self):
+    def qtemplate_ids(self):
         """ Return a dictionary of the QTemplates in the given Topic, keyed by qtid.
             qtemplates[qtid] = {'id', 'position', 'owner', 'name', 'description',
                                 'marker', 'maxscore', 'version', 'status'}
         """
 
         return list(QuestionTopic.in_topic(self.id))
-        #
-        # sql = """select qtemplates.qtemplate, questiontopics.position,
-        #             qtemplates.owner, qtemplates.title, qtemplates.description,
-        #             qtemplates.marker, qtemplates.scoremax, qtemplates.version,
-        #             qtemplates.status
-        #         from questiontopics,qtemplates
-        #         where questiontopics.topic=%s
-        #         and questiontopics.qtemplate = qtemplates.qtemplate;"""
-        #
-        # ret = db.engine.execute(sql, [self.id, ])
-        # qtemplates = {}
-        # if ret:
-        #     for row in ret:
-        #         qtid = int(row[0])
-        #         pos = int(row[1])
-        #         owner = int(row[2])
-        #         name = row[3]
-        #         desc = row[4]
-        #         marker = row[5]
-        #         scoremax = row[6]
-        #         version = int(row[7])
-        #         status = row[8]
-        #         qtemplates[qtid] = {'id': qtid,
-        #                             'position': pos,
-        #                             'owner': owner,
-        #                             'name': name,
-        #                             'description': desc,
-        #                             'marker': marker,
-        #                             'maxscore': scoremax,
-        #                             'version': version,
-        #                             'status': status}
-        # return qtemplates
+
+    def qtemplates(self):
+
+        sql = """select qtemplates.qtemplate, questiontopics.position,
+                    qtemplates.owner, qtemplates.title, qtemplates.description,
+                    qtemplates.marker, qtemplates.scoremax, qtemplates.version,
+                    qtemplates.status
+                from questiontopics,qtemplates
+                where questiontopics.topic=%s
+                and questiontopics.qtemplate = qtemplates.qtemplate;"""
+
+        ret = db.engine.execute(sql, [self.id, ])
+        qtemplates = {}
+        if ret:
+            for row in ret:
+                qtid = int(row[0])
+                pos = int(row[1])
+                owner = int(row[2])
+                name = row[3]
+                desc = row[4]
+                marker = row[5]
+                scoremax = row[6]
+                version = int(row[7])
+                status = row[8]
+                qtemplates[qtid] = {'id': qtid,
+                                    'position': pos,
+                                    'owner': owner,
+                                    'name': name,
+                                    'description': desc,
+                                    'marker': marker,
+                                    'maxscore': scoremax,
+                                    'version': version,
+                                    'status': status}
+        return qtemplates
 
     @staticmethod
     def create(course_id, name, visibility, position=0):

@@ -101,8 +101,8 @@ class TestPractice(TestCase):
         db.session.add(t2)
         db.session.commit()
 
-        self.assertListEqual(t1.qtemplates(), [])
-        self.assertListEqual(t2.qtemplates(), [])
+        self.assertListEqual(t1.qtemplate_ids(), [])
+        self.assertListEqual(t2.qtemplate_ids(), [])
 
         qt1.add_to_topic(t1.id, 2)
         qt2.add_to_topic(t2.id, 1)
@@ -111,8 +111,8 @@ class TestPractice(TestCase):
         self.assertEqual(1, qt2.topic_pos(t2.id))
         self.assertNotEqual(2, qt2.topic_pos(t2.id))
 
-        self.assertListEqual(t1.qtemplates(), [(2, qt1.id), ])
-        self.assertListEqual(t2.qtemplates(), [(1, qt2.id), ])
+        self.assertListEqual(t1.qtemplate_ids(), [(2, qt1.id), ])
+        self.assertListEqual(t2.qtemplate_ids(), [(1, qt2.id), ])
 
 
 
