@@ -12,11 +12,10 @@
 
 from logging import log, INFO, WARN, ERROR
 
-import psycopg2
-
 # Global dbpool
 import OaConfig
 import Pool
+from oasis import app, db
 
 # Cache stuff on local drives to save our poor database
 fileCache = Pool.fileCache(OaConfig.cachedir)
@@ -29,28 +28,28 @@ def get_db_version():
 
     # We have a setting, easy
     try:
-        ret = run_sql("""SELECT "value"
+        ret = db.engine.execute("""SELECT "value"
                          FROM config
-                         WHERE "name" = 'dbversion';""", quiet=True)
-        if ret:
-            return ret[0][0]
-    except psycopg2.DatabaseError:
+                         WHERE "name" = 'dbversion' LIMIT 1;""", quiet=True)
+        for row in ret:
+            return row["value"]
+    except db.DBAPIError:
         pass
 
     # We don't have a setting, need to figure it out
     try:  # questionflags was removed for 3.9.1
-        ret = run_sql("SELECT 1 FROM questionflags;", quiet=True)
-        if isinstance(ret, list):
+        ret = db.engine.execute("SELECT 1 FROM questionflags;", quiet=True)
+        for row in ret:
             return "3.6"
 
-    except psycopg2.DatabaseError:
+    except db.DBAPIError:
         pass
 
     try:  # one of the very original fields
-        ret = run_sql("""SELECT 1 from users;""")
-        if ret:
+        ret = db.engine.execute("""SELECT 1 from users;""")
+        for row in ret:
             return "3.9.1"
-    except psycopg2.DatabaseError:
+    except db.DBAPIError:
         pass
 
     # No database at all?
