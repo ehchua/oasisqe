@@ -541,24 +541,17 @@ def admin_edit_period_submit(p_id):
 
     if p_id == 0:  # It's a new one being created
         period = Period()
-        period.name = name,
-        period.title = title,
-        period.code = code,
-        period.start = start,
-        period.finish = finish
-
     else:
         try:
             period = Period.get(p_id)
         except KeyError:
             return abort(404)
 
-    period.id = p_id
     period.start = start
     period.finish = finish
-    period.name = request.form['name']
-    period.title = request.form['title']
-    period.code = request.form['code']
+    period.name = name
+    period.title = title
+    period.code = code
     period.start_date = start_date
     period.finish_date = finish_date
 
