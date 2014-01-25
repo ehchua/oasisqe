@@ -698,8 +698,8 @@ def admin_savemessages():
         return redirect(url_for("admin_top"))
 
     if 'mesg_news' in form:
-        DB.set_message("news", form['mesg_news'])
+        Message.set_message("news", form['mesg_news'])
     if 'mesg_news' in form:
-        DB.set_message("loginmotd", form['mesg_login'])
+        Message.set_message("loginmotd", form['mesg_login'])
     flash("Changes saved")
     return redirect(url_for("admin_top"))

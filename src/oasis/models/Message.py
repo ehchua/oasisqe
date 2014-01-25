@@ -38,3 +38,19 @@ class Message(db.Model):
             return ""
         return msg.message
 
+    @staticmethod
+    def set_message(name, message, by=None):
+        """ Set the message with the given name.
+        """
+
+        msg = Message.get_by_name(name)
+        if msg:
+            msg.message = message
+            msg.by = by
+            db.session.add(msg)
+            db.session.commit()
+            return True
+        msg = Message(name=name, message=message, by=by)
+        db.session.add(msg)
+        db.session.commit()
+
