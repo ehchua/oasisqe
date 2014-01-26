@@ -210,6 +210,8 @@ def admin_edit_period(p_id):
     else:
         period.start_date = period.start.strftime("%a %d %b %Y")
         period.finish_date = period.finish.strftime("%a %d %b %Y")
+    if not period.code:
+        period.code = ""  # this should really be in the model, but how?
     return render_template(
         "admin_editperiod.html",
         period=period
@@ -539,6 +541,9 @@ def admin_edit_period_submit(p_id):
     title = request.form.get('title', None)
     code = request.form.get('code', None)
 
+    if code == "":
+        code = None
+
     if p_id == 0:  # It's a new one being created
         period = Period()
     else:
@@ -568,11 +573,22 @@ def admin_edit_period_submit(p_id):
     if not period.editable():
         error = "That time period is not editable!"
 
-    try:
-        db.session.add(period)
-        db.session.commit()
-    except ValueError, err:  # Probably a duplicate or something
-        error = "Can't Save: %s" % err
+    if code:
+        if Period.fetch_by_code(code):
+            error = "Code must be unique, if it exists."
+
+    if name:
+        if Period.fetch_by_name(name):
+            error = "Name must be unique, if it exists."
+
+    if not error:
+        try:
+            db.session.add(period)
+            db.session.commit()
+        except ValueError, err:  # Probably a duplicate or something
+            error = "Can't Save: %s" % err
+            #TODO: Needs to figure out the exceptions SQLalchemy throws for duplicates, etc, and pass something
+            # more informative to UI
 
     if error:
         flash(error)
