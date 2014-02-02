@@ -5,10 +5,10 @@
 
 # from logging import log, INFO, WARN
 from sqlalchemy import Column, Integer, String, DateTime
-from oasis import db
+from oasis.database import Base
 
 
-class Message(db.Model):
+class Message(Base):
     __tablename__ = 'messages'
 
 # CREATE TABLE messages (

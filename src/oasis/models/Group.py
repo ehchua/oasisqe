@@ -8,11 +8,12 @@
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
-from oasis import db
 from oasis.models.Period import Period
+from oasis.database import Base
 
 
-class GroupTypes(db.Model):
+
+class GroupTypes(Base):
     """ Which types of group are there.
     """
     __tablename__ = "grouptypes"
@@ -21,7 +22,7 @@ class GroupTypes(db.Model):
     description = Column(String(250))
 
 
-class Group(db.Model):
+class Group(Base):
     """ Look after groups of users.
     """
     __tablename__ = "ugroups"

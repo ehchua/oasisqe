@@ -15,7 +15,8 @@ from logging import log, INFO, WARN, ERROR
 # Global dbpool
 import OaConfig
 import Pool
-from oasis import app, db
+from oasis.database import db_session
+
 
 # Cache stuff on local drives to save our poor database
 fileCache = Pool.fileCache(OaConfig.cachedir)
@@ -28,12 +29,12 @@ def get_db_version():
 
     # We have a setting, easy
     try:
-        ret = db.engine.execute("""SELECT "value"
+        ret = db_session.engine.execute("""SELECT "value"
                          FROM config
                          WHERE "name" = 'dbversion' LIMIT 1;""", quiet=True)
         for row in ret:
             return row["value"]
-    except db.DBAPIError:
+    except db_session.DBAPIError:
         pass
 
     # We don't have a setting, need to figure it out

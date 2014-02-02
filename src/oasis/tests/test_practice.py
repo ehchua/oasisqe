@@ -6,29 +6,30 @@
 from unittest import TestCase
 import os
 
-from oasis import app, db
-
 from oasis.models.User import User
 from oasis.models.Course import Course
 from oasis.models.Topic import Topic
 from oasis.models.QTemplate import QTemplate
-from oasis.models.Question import Question
+
+from oasis.database import Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 
 class TestPractice(TestCase):
 
     def setUp(self):
 
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join('/tmp',
-                                                                            'test.db')
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-        db.create_all()
+        self.engine = create_engine('sqlite:///:memory:')
+        self.session = scoped_session(sessionmaker(autocommit=False,
+                                                   autoflush=False,
+                                                   bind=self.engine))
+        Base.query = self.session.query_property()
+        Base.metadata.create_all(bind=self.engine)
 
     def tearDown(self):
 
-        db.drop_all()
-        db.session.remove()
+        self.session.remove()
 
     def test_question_generate(self):
         """ Check question generation logic
@@ -78,14 +79,14 @@ class TestPractice(TestCase):
                                scoremax=1,
                                status=1)
 
-        db.session.add(user1)
-        db.session.add(user2)
-        db.session.add(course1)
-        db.session.add(course2)
-        db.session.add(qt1)
-        db.session.add(qt2)
+        self.session.add(user1)
+        self.session.add(user2)
+        self.session.add(course1)
+        self.session.add(course2)
+        self.session.add(qt1)
+        self.session.add(qt2)
 
-        db.session.commit()
+        self.session.commit()
 
         t1 = Topic.create(course_id=course1.id,
                           name="Test P1",
@@ -97,9 +98,9 @@ class TestPractice(TestCase):
                           visibility=4,
                           position=1)
 
-        db.session.add(t1)
-        db.session.add(t2)
-        db.session.commit()
+        self.session.add(t1)
+        self.session.add(t2)
+        self.session.commit()
 
         self.assertListEqual(t1.qtemplate_ids(), [])
         self.assertListEqual(t2.qtemplate_ids(), [])

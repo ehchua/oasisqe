@@ -7,13 +7,12 @@
     Used mainly by Groups
 """
 
-from oasis import db
 from sqlalchemy import Column, Integer, String, Boolean, Text
-
 import re
+from oasis.database import Base
 
 
-class UFeed(db.Model):
+class UFeed(Base):
     """ A feed object tells us about the feed and where to get the scripts
         that do the main work of importing user account information
     """

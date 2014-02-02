@@ -14,7 +14,6 @@ from logging import log, ERROR
 from flask import render_template, session, request, redirect, \
     abort, url_for, flash, make_response
 
-from oasis import db
 from oasis.lib import OaConfig, DB, \
     Setup, CourseAdmin, Util, Assess, Spreadsheets
 from oasis.models.User import User

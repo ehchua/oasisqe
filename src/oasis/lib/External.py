@@ -19,7 +19,7 @@ from ..models.User import User
 from ..models.Group import Group
 from ..models.Feed import Feed
 from ..models.UFeed import UFeed
-from oasis import db
+from oasis.database import db_session
 
 
 def feeds_available_group_scripts():
@@ -187,8 +187,8 @@ def users_update_from_feed(upids):
                             source='feed',
                             confirmation_code='',
                             confirmed=True)
-                db.session.add(user)
-                db.session.commit()
+                db_session.add(user)
+                db_session.commit()
                 break
         else:
             log(ERROR,

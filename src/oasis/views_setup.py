@@ -17,7 +17,7 @@ MYPATH = os.path.dirname(__file__)
 
 from oasis.lib.Audit import audit, get_records_by_user
 
-from oasis import app, db
+from oasis import app
 from .lib.Util import authenticated
 from .lib import Util
 

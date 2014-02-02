@@ -8,11 +8,11 @@
 """
 
 import datetime
-from oasis import db
 from sqlalchemy import Column, Integer, String, DateTime
+from oasis.database import Base
 
 
-class Period(db.Model):
+class Period(Base):
     """ A time period is relatively simple, mainly just name and
         start and finish.
     """

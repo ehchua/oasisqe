@@ -2,32 +2,28 @@
 
 
 from unittest import TestCase
-import os
 import datetime
 
-from oasis import app, db
-
-from oasis.models.User import User
-from oasis.models.Course import Course
-from oasis.models.Group import Group
-from oasis.models.Exam import Exam
-from oasis.models.QTemplate import QTemplate
+from oasis.models import User, Course, Exam, QTemplate, UserExam
+from oasis.database import Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 
 class TestAssessment(TestCase):
 
     def setUp(self):
 
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join('/tmp',
-                                                                            'test.db')
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-        db.create_all()
+        self.engine = create_engine('sqlite:///:memory:')
+        self.session = scoped_session(sessionmaker(autocommit=False,
+                                                   autoflush=False,
+                                                   bind=self.engine))
+        Base.query = self.session.query_property()
+        Base.metadata.create_all(bind=self.engine)
 
     def tearDown(self):
 
-        db.drop_all()
-        db.session.remove()
+        self.session.remove()
 
     def test_UserExam(self):
         """ Check student/exam functionality
@@ -55,10 +51,11 @@ class TestAssessment(TestCase):
         exam1 = Exam.create(course1, 1, "Test 1", 1, 30, date1, date2, "123", code=None, instant=1)
         exam2 = Exam.create(course1, 1, "Test 2", 1, 30, date1, date3, "1234", code=None, instant=1)
 
-        db.session.add(exam1)
-        db.session.add(exam2)
-        db.session.add(course1)
-        db.session.commit()
+        self.session.add(u)
+        self.session.add(exam1)
+        self.session.add(exam2)
+        self.session.add(course1)
+        self.session.commit()
 
         ue1 = exam1.by_student(u.id)
         ue2 = exam2.by_student(u.id)
@@ -66,6 +63,6 @@ class TestAssessment(TestCase):
 
         self.assertEqual(ue1.exam, exam1.id)
         self.assertEqual(ue2.student, u.id)
-        self.assertEqual(ue1, ue3)
-        self.assertNotEqual(ue2, ue3)
+        self.assertEqual(ue1.id, ue3.id)
+        self.assertNotEqual(ue2.id, ue3.id)
 

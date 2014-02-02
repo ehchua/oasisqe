@@ -15,14 +15,15 @@ from logging import log, INFO, ERROR
 from oasis.lib.OaTypes import todatetime
 from oasis.lib import Util
 
-from oasis import db
 from oasis.models.Permission import Permission
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Text
 from sqlalchemy import DateTime, Float
 
+from oasis.database import Base, db_session
 
-class Exam(db.Model):
+
+class Exam(Base):
 
     __tablename__ = "exams"
 
@@ -535,13 +536,12 @@ class Exam(db.Model):
         return examtotal
 
 
-
 # ----- Internal implementation details ------
 # These are a bit messy so it's intended that they may go away one day
 # Do not use directly, always go via Exam object.
 
 
-class _Marklog(db.Model):
+class _Marklog(Base):
 
     __tablename__ = "marklog"
 #CREATE TABLE marklog (
@@ -563,7 +563,7 @@ class _Marklog(db.Model):
     value = Column(String(64))
 
 
-class UserExam(db.Model):
+class UserExam(Base):
     __tablename__ = "userexams"
 
 # CREATE TABLE userexams (
@@ -598,9 +598,6 @@ class UserExam(db.Model):
         newue.student = user_id
         newue.status = 1
         newue.score = -1
-
-        db.session.add(newue)
-        db.session.commit()
 
         return newue
 

@@ -9,11 +9,11 @@
 
 from logging import log, ERROR, INFO
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
-from oasis import db
-
 from oasis.models.QTemplate import QuestionTopic
+from oasis.database import Base
 
-class Topic(db.Model):
+
+class Topic(Base):
     """ A topic contains a collection of questions.
     """
     __tablename__ = "topics"

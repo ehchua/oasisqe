@@ -8,7 +8,8 @@
 
 # We include the views covering logging in/out and account signup and related.
 
-from flask import Flask
+from flask import Flask, session
+import datetime
 import os
 import logging
 from logging import log, INFO, ERROR
@@ -17,50 +18,81 @@ from logging.handlers import SMTPHandler, RotatingFileHandler
 from oasis.lib import OaConfig
 from oasis.lib.Audit import audit
 
-from flask.ext.sqlalchemy import SQLAlchemy
+
+app = Flask(__name__,
+            template_folder=os.path.join(OaConfig.homedir, "templates"),
+            static_folder=os.path.join(OaConfig.homedir, "static"),
+            static_url_path=os.path.join(os.path.sep, OaConfig.staticpath, "static"))
+
+app.secret_key = OaConfig.secretkey
+app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8MB max file upload
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://%s:%s@%s:%s/%s' % \
+                                        (OaConfig.dbuname, OaConfig.dbpass, OaConfig.dbhost, OaConfig.dbport, OaConfig.dbname)
+
+# Email error messages to admins ?
+if OaConfig.email_admins:
+    mh = SMTPHandler(OaConfig.smtp_server,
+                     OaConfig.email,
+                     OaConfig.email_admins,
+                     'OASIS Internal Server Error')
+    mh.setLevel(logging.ERROR)
+    app.logger.addHandler(mh)
+
+app.debug = False
+
+if not app.debug:  # Log info or higher
+    try:
+        fh = RotatingFileHandler(filename=OaConfig.logfile)
+        fh.setLevel(logging.INFO)
+        fh.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s: %(message)s | %(pathname)s:%(lineno)d"
+        ))
+        app.logger.addHandler(fh)
+        logging.log(logging.INFO,
+                    "File logger starting up")
+    except IOError, err:  # Probably a permission denied or folder not exist
+        logging.log(logging.ERROR,
+                    """Unable to open log file: %s""" % err)
 
 
-def create_app(config):
+from oasis.database import db_session
 
-    app = Flask(__name__,
-                template_folder=os.path.join(config.homedir, "templates"),
-                static_folder=os.path.join(config.homedir, "static"),
-                static_url_path=os.path.join(os.path.sep, config.staticpath, "static"))
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
 
-    app.secret_key = config.secretkey
-    app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024  # 8MB max file upload
+@app.context_processor
+def template_context():
+    """ Useful values for templates to always have access to"""
+    if 'username' in session:
+        username = session['username']
+    else:
+        username = None
 
-    # Email error messages to admins ?
-    if config.email_admins:
-        mh = SMTPHandler(config.smtp_server,
-                         config.email,
-                         config.email_admins,
-                         'OASIS Internal Server Error')
-        mh.setLevel(logging.ERROR)
-        app.logger.addHandler(mh)
+    if "user_fullname" in session:
+        user_fullname = session['user_fullname']
+    else:
+        user_fullname = None
+    today = datetime.date.today()
 
-    app.debug = False
-
-    if not app.debug:  # Log info or higher
-        try:
-            fh = RotatingFileHandler(filename=config.logfile)
-            fh.setLevel(logging.INFO)
-            fh.setFormatter(logging.Formatter(
-                "%(asctime)s %(levelname)s: %(message)s | %(pathname)s:%(lineno)d"
-            ))
-            app.logger.addHandler(fh)
-            logging.log(logging.INFO,
-                        "File logger starting up")
-        except IOError, err:  # Probably a permission denied or folder not exist
-            logging.log(logging.ERROR,
-                        """Unable to open log file: %s""" % err)
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://%s:%s@%s:%s/%s' % (config.dbuname, config.dbpass, config.dbhost, config.dbport, config.dbname)
-
-    return app, SQLAlchemy(app)
-
-
-app, db = create_app(OaConfig)
+    if "user_authtype" in session:
+        auth_type = session['user_authtype']
+    else:
+        auth_type = "none"
+    return {'cf': {
+        'static': OaConfig.staticURL + u"/static/",
+        'url': OaConfig.parentURL + u"/",
+        'username': username,
+        'userfullname': user_fullname,
+        'email': OaConfig.email,
+        'today': today,
+        'auth_type': auth_type,
+        'contact_url': OaConfig.contact_url,
+        'feed_path': OaConfig.feed_path,
+        'open_registration': OaConfig.open_registration,
+        'enable_local_login': OaConfig.enable_local_login,
+        'enable_webauth_login': OaConfig.enable_webauth_login,
+    }}
 
 
 from oasis import views_practice

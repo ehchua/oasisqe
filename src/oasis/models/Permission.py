@@ -5,8 +5,10 @@
 
 """ Contains db access functions for users, groups, permissions and courses """
 
-from oasis import db
+
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
+from oasis.database import Base
+
 
 PERMS = {'sysadmin': 1, 'useradmin': 2,
          'courseadmin': 3, 'coursecoord': 4,
@@ -18,7 +20,7 @@ PERMS = {'sysadmin': 1, 'useradmin': 2,
          'syscourses': 19, 'surveyresults': 20}
 
 
-class Permission(db.Model):
+class Permission(Base):
     __tablename__ = "permissions"
     id = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey("users.id"))

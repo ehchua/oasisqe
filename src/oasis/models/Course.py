@@ -10,18 +10,17 @@
 from logging import log, ERROR
 import datetime
 
-from oasis import db
-from oasis.models.Group import Group
-from oasis.models.Topic import Topic
+from oasis.models import Group
+from oasis.models import Topic
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
+from oasis.database import Base, db_session
 
 
-# WARNING: name and title are stored in the database as: title, description
-
-
-class Course(db.Model):
+class Course(Base):
     """ A topic contains a collection of questions.
     """
+    # WARNING: name and title are stored in the database as: title, description
+
     __tablename__ = "courses"
 
 #CREATE TABLE courses (
@@ -97,20 +96,17 @@ class Course(db.Model):
         newc.title = title
         newc.owner = owner
         newc.type = coursetype
-
-        db.session.add(newc)
-        db.session.commit()
         return newc
 
     def add_group(self, group_id):
         """ Add a group to the course."""
 
-        db.engine.execute("INSERT INTO groupcourses (groupid, course) VALUES (%s, %s);", (group_id, self.id))
+        db_session.engine.execute("INSERT INTO groupcourses (groupid, course) VALUES (%s, %s);", (group_id, self.id))
 
     def del_group(self, group_id):
         """ Remove a group from the course."""
 
-        db.engine.execute("DELETE FROM groupcourses WHERE groupid=%s AND course=%s;", (group_id, self.id))
+        db_session.engine.execute("DELETE FROM groupcourses WHERE groupid=%s AND course=%s;", (group_id, self.id))
 
     def topics(self, archived=2):
         """ Return a summary of all topics in the course.
@@ -144,8 +140,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit()
+        db_session.add(group)
+        db_session.commit()
 
         self.add_group(group.id)
 
@@ -164,8 +160,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit()
+        db_session.add(group)
+        db_session.commit()
 
         self.add_group(group.id)
 
@@ -183,8 +179,8 @@ class Course(db.Model):
         group.feed = None
         group.feedargs = ""
         group.active = True
-        db.session.add(group)
-        db.session.commit()
+        db_session.add(group)
+        db_session.commit()
 
         self.add_group(group.id)
 
@@ -206,8 +202,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit(group)
+        db_session.add(group)
+        db_session.commit(group)
 
         self.add_group(group.id)
 
@@ -226,8 +222,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit(group)
+        db_session.add(group)
+        db_session.commit(group)
 
         self.add_group(group.id)
 
@@ -258,8 +254,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit()
+        db_session.add(group)
+        db_session.commit()
 
         self.add_group(group.id)
 
@@ -278,8 +274,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit()
+        db_session.add(group)
+        db_session.commit()
 
         self.add_group(group.id)
 
@@ -312,8 +308,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit()
+        db_session.add(group)
+        db_session.commit()
 
         self.add_group(group.id)
 
@@ -332,8 +328,8 @@ class Course(db.Model):
         group.feedargs = ""
         group.active = True
 
-        db.session.add(group)
-        db.session.commit()
+        db_session.add(group)
+        db_session.commit()
 
         self.add_group(group.id)
 

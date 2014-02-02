@@ -17,7 +17,7 @@ from oasis.lib import External
 
 MYPATH = os.path.dirname(__file__)
 from .lib import DB
-from oasis import app, db
+from oasis import app
 from .lib.Util import require_perm
 from .models.Group import Group
 from .models.Feed import Feed

@@ -4,37 +4,31 @@
 from unittest import TestCase
 import os
 import datetime
+from flask import current_app
 
+from oasis.models import User, Feed, Course, Group
+from oasis.models import Message, Period, Topic, UFeed
+from oasis.models import Exam, Permission, QTemplate
 
-from oasis.models.User import User
-from oasis.models.Feed import Feed
-from oasis.models.Course import Course
-from oasis.models.Group import Group
-from oasis.models.Message import Message
-from oasis.models.Period import Period
-from oasis.models.Topic import Topic
-from oasis.models.UFeed import UFeed
-from oasis.models.Exam import Exam
-from oasis.models.Permission import Permission
-from oasis.models.QTemplate import QTemplate
-
-
-from oasis import app, db
+from oasis.database import Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 
 class TestApp(TestCase):
 
     def setUp(self):
 
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join('/tmp', 'test.db')
-        app.config['TESTING'] = True
-        self.app = app.test_client()
-        db.create_all()
+        self.engine = create_engine('sqlite:///:memory:')
+        self.session = scoped_session(sessionmaker(autocommit=False,
+                                                   autoflush=False,
+                                                   bind=self.engine))
+        Base.query = self.session.query_property()
+        Base.metadata.create_all(bind=self.engine)
 
     def tearDown(self):
 
-        db.drop_all()
-        db.session.remove()
+        self.session.remove()
 
     def test_user_obj(self):
 
@@ -80,8 +74,8 @@ class TestApp(TestCase):
 
         u.set_password("Ab%^/")
 
-        db.session.add(u)
-        db.session.commit()
+        self.session.add(u)
+        self.session.commit()
 
         u2 = User.get_by_uname("bob1")
 
@@ -126,12 +120,12 @@ class TestApp(TestCase):
         c4 = Course.create("ctest4", "Course 2", 0, 1)
         c4.active = False
 
-        db.session.add(c1)
-        db.session.add(c2)
-        db.session.add(c3)
-        db.session.add(c4)
+        self.session.add(c1)
+        self.session.add(c2)
+        self.session.add(c3)
+        self.session.add(c4)
 
-        db.session.commit()
+        self.session.commit()
 
         match = list(Course.all(only_active=False))
         self.assertEqual(len(match), 4)
@@ -153,12 +147,12 @@ class TestApp(TestCase):
         exam2 = Exam.create(course1, 1, "Test 2", 1, 30, date1, date3, "1234", code=None, instant=1)
         exam3 = Exam.create(course2, 1, "Test 3", 1, 60, date2, date3, "", code="abcd", instant=0)
 
-        db.session.add(exam1)
-        db.session.add(exam2)
-        db.session.add(exam3)
-        db.session.add(course1)
-        db.session.add(course2)
-        db.session.commit()
+        self.session.add(exam1)
+        self.session.add(exam2)
+        self.session.add(exam3)
+        self.session.add(course1)
+        self.session.add(course2)
+        self.session.commit()
 
         self.assertEqual(exam1.duration, 30)
         self.assertEqual(exam2.duration, 30)
@@ -181,18 +175,18 @@ class TestApp(TestCase):
 
         course1 = Course.create("topiccourse", "Testing Topics 1", 0, 1)
         course2 = Course.create("topiccourse2", "Testing Topics 2", 0, 1)
-        db.session.add(course1)
-        db.session.add(course2)
-        db.session.commit()
+        self.session.add(course1)
+        self.session.add(course2)
+        self.session.commit()
 
         topic1 = Topic.create(course1.id, "Topic 1", 1, position=3)
         topic2 = Topic.create(course1.id, "Topic 2", 1, position=4)
         topic3 = Topic.create(course2.id, "Topic 3", 1, position=5)
 
-        db.session.add(topic1)
-        db.session.add(topic2)
-        db.session.add(topic3)
-        db.session.commit()
+        self.session.add(topic1)
+        self.session.add(topic2)
+        self.session.add(topic3)
+        self.session.commit()
 
         self.assertTrue(topic1.id)
         self.assertTrue(topic2.id)
@@ -222,8 +216,8 @@ class TestApp(TestCase):
                         confirmation_code="",
                         confirmed=False
         )
-        db.session.add(u)
-        db.session.commit()
+        self.session.add(u)
+        self.session.commit()
 
         self.assertTrue(u)
 
@@ -236,8 +230,8 @@ class TestApp(TestCase):
         )
 
         qt.embed_id = "93456"
-        db.session.add(qt)
-        db.session.commit()
+        self.session.add(qt)
+        self.session.commit()
 
         self.assertEqual(qt.owner, u.id)
         self.assertEqual(qt.title, "testqtemplate1")

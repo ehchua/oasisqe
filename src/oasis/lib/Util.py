@@ -14,11 +14,9 @@ from email.mime.text import MIMEText
 from flask import session, redirect, url_for, request, flash
 import datetime
 import time
-from oasis.models.Permission import Permission
-import oasis
-from . import OaConfig
+from oasis.models import Permission
 
-app = oasis.app
+from . import OaConfig
 
 
 # Human readable symbols
@@ -34,40 +32,6 @@ def generate_uuid_readable(length=9):
     # 57^n possibilities - about 6 million billion options for n=9.
     # Hopefully pretty good.
     return "".join([random.choice(valid) for _ in xrange(length)])
-
-
-@app.context_processor
-def template_context():
-    """ Useful values for templates to always have access to"""
-    if 'username' in session:
-        username = session['username']
-    else:
-        username = None
-
-    if "user_fullname" in session:
-        user_fullname = session['user_fullname']
-    else:
-        user_fullname = None
-    today = datetime.date.today()
-
-    if "user_authtype" in session:
-        auth_type = session['user_authtype']
-    else:
-        auth_type = "none"
-    return {'cf': {
-        'static': OaConfig.staticURL + u"/static/",
-        'url': OaConfig.parentURL + u"/",
-        'username': username,
-        'userfullname': user_fullname,
-        'email': OaConfig.email,
-        'today': today,
-        'auth_type': auth_type,
-        'contact_url': OaConfig.contact_url,
-        'feed_path': OaConfig.feed_path,
-        'open_registration': OaConfig.open_registration,
-        'enable_local_login': OaConfig.enable_local_login,
-        'enable_webauth_login': OaConfig.enable_webauth_login,
-    }}
 
 
 def authenticated(func):

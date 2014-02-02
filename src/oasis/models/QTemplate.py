@@ -8,12 +8,14 @@
 """
 
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
-from oasis import db
 from logging import log, INFO, WARN, ERROR
 import cPickle
 
+from oasis.database import Base, db_session
 
-class QTemplate(db.Model):
+
+
+class QTemplate(Base):
 
     __tablename__ = "qtemplates"
 #
@@ -71,8 +73,8 @@ class QTemplate(db.Model):
         newqt.scoremax = scoremax
         newqt.status = status
 
-        db.session.add(newqt)
-        db.session.commit()
+        db_session.add(newqt)
+        db_session.commit()
 
         log(INFO, "QTemplate %s Created by %s" % (newqt.id, owner))
 
@@ -96,8 +98,8 @@ class QTemplate(db.Model):
         qt = QuestionTopic(qtemplate=self.id,
                            topic=topic_id,
                            position=position)
-        db.session.add(qt)
-        db.session.commit()
+        db_session.add(qt)
+        db_session.commit()
 
     def num_variations(self, version=1000000000):
         """ Return the number of variations for a question template. """
@@ -474,7 +476,7 @@ def get_qt_editor(qt_id):
     return etype
 
 
-class QuestionTopic(db.Model):
+class QuestionTopic(Base):
     """ Track a question's position in a topic.
     """
 

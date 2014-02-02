@@ -9,13 +9,12 @@
 
 from logging import log, ERROR, INFO, WARN
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
-from oasis import db
-from oasis.models.QTemplate import QTemplate
 from oasis.lib import Util
 import datetime
+from oasis.database import Base
 
 
-class Question(db.Model):
+class Question(Base):
 
     __tablename__ = "questions"
 ##

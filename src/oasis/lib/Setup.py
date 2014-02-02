@@ -9,7 +9,7 @@
 
 from flask import flash
 from logging import log, ERROR
-from oasis import db
+from oasis.database import db_session
 import StringIO
 from oasis.lib import External
 from oasis.models.Topic import Topic

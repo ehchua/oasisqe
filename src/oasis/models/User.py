@@ -7,11 +7,12 @@ from logging import log, INFO, WARN
 import hashlib
 import bcrypt
 from sqlalchemy import Column, Integer, String, DateTime
-from oasis import db
 from oasis.lib.Util import generate_uuid_readable
 
+from oasis.database import Base
 
-class User(db.Model):
+
+class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     uname = Column(String(12), unique=True)

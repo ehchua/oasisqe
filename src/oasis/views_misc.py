@@ -21,7 +21,7 @@ from .lib import DB, Attach, QEditor, OaConfig
 
 MYPATH = os.path.dirname(__file__)
 
-from oasis import app, db
+from oasis import app
 from .lib.Audit import audit
 from .models.Permission import Permission
 from .lib.Util import authenticated, send_email
