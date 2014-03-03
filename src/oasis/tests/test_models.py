@@ -2,13 +2,12 @@
 
 
 from unittest import TestCase
-import os
 import datetime
-from flask import current_app
 
-from oasis.models import User, Feed, Course, Group
-from oasis.models import Message, Period, Topic, UFeed
+from oasis.models import User, Course
+from oasis.models import Topic
 from oasis.models import Exam, Permission, QTemplate
+from oasis.models import UserExam
 
 from oasis.database import Base
 from sqlalchemy import create_engine
@@ -143,6 +142,10 @@ class TestApp(TestCase):
 
         course1 = Course.create("examcourse", "Testing Exams 1", 0, 1)
         course2 = Course.create("examcourse2", "Testing Exams 2", 0, 1)
+        self.session.add(course1)
+        self.session.add(course2)
+        self.session.commit()
+
         exam1 = Exam.create(course1, 1, "Test 1", 1, 30, date1, date2, "123", code=None, instant=1)
         exam2 = Exam.create(course1, 1, "Test 2", 1, 30, date1, date3, "1234", code=None, instant=1)
         exam3 = Exam.create(course2, 1, "Test 3", 1, 60, date2, date3, "", code="abcd", instant=0)
@@ -150,8 +153,6 @@ class TestApp(TestCase):
         self.session.add(exam1)
         self.session.add(exam2)
         self.session.add(exam3)
-        self.session.add(course1)
-        self.session.add(course2)
         self.session.commit()
 
         self.assertEqual(exam1.duration, 30)

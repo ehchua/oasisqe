@@ -10,7 +10,7 @@
 from logging import log, ERROR, INFO
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from oasis.models.QTemplate import QuestionTopic
-from oasis.database import Base
+from oasis.database import Base, db_session
 
 
 class Topic(Base):
@@ -44,7 +44,8 @@ class Topic(Base):
                 """
         params = (self.id,)
         try:
-            res = db.engine.execute(sql, params)
+            #TODO:  res = db.engine.execute(sql, params)
+            res = None
             if not res:
                 num = 0
             else:
@@ -79,7 +80,8 @@ class Topic(Base):
                 where questiontopics.topic=%s
                 and questiontopics.qtemplate = qtemplates.qtemplate;"""
 
-        ret = db.engine.execute(sql, [self.id, ])
+        # TODO: ret = db.engine.execute(sql, [self.id, ])
+        ret = None
         qtemplates = {}
         if ret:
             for row in ret:
@@ -112,8 +114,8 @@ class Topic(Base):
         newt.visibility = visibility
         newt.position = position
 
-        db.session.add(newt)
-        db.session.commit()
+        db_session.add(newt)
+        db_session.commit()
         return newt
 
     @staticmethod

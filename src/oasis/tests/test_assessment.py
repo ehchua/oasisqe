@@ -25,7 +25,7 @@ class TestAssessment(TestCase):
 
         self.session.remove()
 
-    def test_UserExam(self):
+    def test_user_exam(self):
         """ Check student/exam functionality
         """
 
@@ -48,13 +48,15 @@ class TestAssessment(TestCase):
 
         course1 = Course.create("examcourse", "Testing Exams 1", 0, 1)
 
+        self.session.add(course1)
+        self.session.commit()
+
         exam1 = Exam.create(course1, 1, "Test 1", 1, 30, date1, date2, "123", code=None, instant=1)
         exam2 = Exam.create(course1, 1, "Test 2", 1, 30, date1, date3, "1234", code=None, instant=1)
 
         self.session.add(u)
         self.session.add(exam1)
         self.session.add(exam2)
-        self.session.add(course1)
         self.session.commit()
 
         ue1 = exam1.by_student(u.id)

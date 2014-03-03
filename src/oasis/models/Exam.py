@@ -598,7 +598,8 @@ class UserExam(Base):
         newue.student = user_id
         newue.status = 1
         newue.score = -1
-
+        db_session.add(newue)
+        db_session.commit()
         return newue
 
     @staticmethod

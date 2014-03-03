@@ -7,7 +7,7 @@
 
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text
-from oasis.database import Base
+from oasis.database import Base, db_session
 
 
 PERMS = {'sysadmin': 1, 'useradmin': 2,
@@ -65,26 +65,20 @@ class Permission(Base):
     @staticmethod
     def delete_perm(uid, group_id, perm):
         """Remove a permission. """
-        db.engine.execute("""DELETE FROM permissions
-                   WHERE userid=%s
-                     AND course=%s
-                     AND permission=%s""",
-                (uid, group_id, perm))
+        #TODO:   db.engine.execute("""DELETE FROM permissions WHERE userid=%s AND course=%s AND permission=%s""", (uid, group_id, perm))
 
     @staticmethod
     def add_perm(uid, course_id, perm):
         """ Assign a permission."""
-        db.insert("permissions", values={'course': course_id, 'userid': uid, 'permission': perm})
+        #TODO:   db.insert("permissions", values={'course': course_id, 'userid': uid, 'permission': perm})
 
     @staticmethod
     def get_course_perms(course_id):
         """ Return a list of all users with permissions on the given course.
             Exclude those who get them via superuser.
         """
-        ret = db.engine.execute("""SELECT id, userid, permission
-                         FROM permissions
-                         WHERE course=%s;""",
-                      (course_id,))
+        #TODO:   ret = db.engine.execute("""SELECT id, userid, permission FROM permissions WHERE course=%s;""", (course_id,))
+        ret = None
         if not ret:
             return []
         res = [(int(perm[1]), int(perm[2])) for perm in ret if

@@ -1,6 +1,5 @@
 
-from .Exam import Exam
-from .Exam import UserExam
+from .Exam import Exam, UserExam
 from .Course import Course
 from .Feed import Feed
 from .Group import Group
