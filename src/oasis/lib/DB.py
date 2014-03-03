@@ -10,7 +10,7 @@
     being broken off and put in db/*.py
 """
 
-import psycopg2
+import sqlalchemy
 import cPickle
 import datetime
 import _strptime  # import should prevent thread import blocking issues
@@ -19,15 +19,10 @@ import json
 
 from logging import log, INFO, WARN, ERROR
 
-IntegrityError = psycopg2.IntegrityError
-
 # Global dbpool
 import OaConfig
 import Pool
 
-# 3 connections. Lets us keep going if one is slow but
-# doesn't overload the server if there're a lot of us
-dbpool = Pool.DbPool(OaConfig.oasisdbconnectstring, 3)
 
 # Cache stuff on local drives to save our poor database
 fileCache = Pool.fileCache(OaConfig.cachedir)
@@ -36,6 +31,27 @@ from Pool import MCPool
 
 # Get a pool of memcache connections to use
 MC = MCPool('127.0.0.1:11211', 3)
+
+
+class DbConn(object):
+    """ Look after our database connection.
+    """
+
+    def __init__(self, dbparams):
+        """ Set up our connection to the db.
+            Returns SQLAlchemy connection handle.
+            dbparams = {
+            'dbtype':,
+            'dbname':,
+            'dbuname':,
+            'dbpass':,
+            'dbhost':,
+            'dbport':,
+            }
+        """
+        connstring = '%(dbtype)s://%(dbuname)s:%(dbpass)s@%(dbhost)s:%(dbport)s/%(dbname)s'
+        self.engine = sqlalchemy.create_engine(connstring % dbparams)
+        self.conn = self.engine.connect()
 
 
 def run_sql(sql, params=None, quiet=False):

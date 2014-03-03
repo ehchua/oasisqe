@@ -26,6 +26,7 @@ from oasis.lib import OaConfig, Users2, Users, DB
 from oasis.lib.Audit import audit
 from oasis.lib.Permissions import satisfy_perms
 
+
 app = Flask(__name__,
             template_folder=os.path.join(OaConfig.homedir, "templates"),
             static_folder=os.path.join(OaConfig.homedir, "static"),
